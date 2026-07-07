@@ -681,6 +681,7 @@ function handleAddVariable(array $input): void {
 
 function handleUpdateVariables(array $input): void {
     if (empty($input['organization_id'])) {
+    error_log("VARIABLES-UPDATE INPUT: " . json_encode($input));
         jsonError('Organization ID is required');
     }
 
@@ -721,7 +722,7 @@ function handleUpdateVariables(array $input): void {
     $warnings = $validation['warnings'] ?? [];
 
     // Check for empty required variables and add as warnings (not errors - allow partial saves)
-    $varDefs = Database::fetchAll("SELECT id, name, is_required FROM variable_definitions WHERE id = ANY(?)", [array_keys($filteredVars)]);
+    $varDefs = Database::fetchAll("SELECT id, name, is_required FROM variable_definitions WHERE id = ANY(?)", ["{" . implode(",", array_keys($filteredVars)) . "}"]);
     $varMap = [];
     foreach ($varDefs as $v) {
         $varMap[$v['id']] = $v;
