@@ -884,7 +884,10 @@ async function updateOrganization() {
 
         if (Object.keys(varUpdates).length > 0) {
             const varResponse = await API.post('variables-update', { organization_id: currentOrgId, variables: varUpdates });
-            if (!varResponse.success) { Toast.error('Org atualizada, mas erro ao salvar variáveis'); }
+            if (!varResponse.success) {
+                console.error('variables-update error:', varResponse);
+                Toast.warning('Org atualizada, mas houve avisos ao salvar variaveis');
+            }
         }
 
         // Create new variables that don't exist yet

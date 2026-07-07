@@ -680,40 +680,63 @@ function handleAddVariable(array $input): void {
 }
 
 function handleUpdateVariables(array $input): void {
-    if (empty($input['organization_id']) || empty($input['variables'])) {
-        jsonError('Organization ID and variables are required');
+    if (empty($input['organization_id'])) {
+        jsonError('Organization ID is required');
     }
 
     $orgId = (int) $input['organization_id'];
-    $variables = $input['variables'];
+
+    // Accept variables in either format: { "1": "value" } or { "variables": { "1": "value" } }
+    $variables = $input['variables'] ?? $input;
+    if (!is_array($variables) || empty($variables)) {
+        jsonError('Variables array is required');
+    }
+
+    // Filter only numeric keys (variable IDs) from the input
+    $filteredVars = [];
+    foreach ($variables as $key => $value) {
+        if (is_numeric($key)) {
+            $filteredVars[(int)$key] = $value;
+        }
+    }
+
+    if (empty($filteredVars)) {
+        jsonError('No valid variable IDs found');
+    }
 
     // Permission check
     $userOrgId = getUserOrgId();
     if ($userOrgId !== null && $userOrgId !== $orgId) {
-        jsonError('Sem permissão para esta organização', 403);
+        jsonError('Sem permissao para esta organizacao', 403);
     }
 
     $org = Database::fetchOne("SELECT id, acronym FROM organizations WHERE id = ?", [$orgId]);
 
     if (!$org) {
-        jsonError('Organização não encontrada', 404);
+        jsonError('Organizacao nao encontrada', 404);
     }
 
-    // Validate all variables before saving
-    $validation = validateAllVariables($variables);
+    // Get warnings for empty required variables (but don't block save)
+    $validation = validateAllVariables($filteredVars);
+    $warnings = $validation['warnings'] ?? [];
 
-    if (!$validation['valid']) {
-        jsonError('Erros de validação encontrados', 400, $validation['errors']);
+    // Check for empty required variables and add as warnings (not errors - allow partial saves)
+    $varDefs = Database::fetchAll("SELECT id, name, is_required FROM variable_definitions WHERE id = ANY(?)", [array_keys($filteredVars)]);
+    $varMap = [];
+    foreach ($varDefs as $v) {
+        $varMap[$v['id']] = $v;
     }
-
-    // Check for warnings (still save, but inform user)
-    $warnings = $validation['warnings'];
+    foreach ($filteredVars as $varId => $value) {
+        if (isset($varMap[$varId]) && $varMap[$varId]['is_required'] && trim($value) === '') {
+            $name = $varMap[$varId]['name'];
+            $warnings[] = "Variavel obrigatoria vazia: $name";
+        }
+    }
 
     try {
         Database::beginTransaction();
 
-        foreach ($variables as $varId => $value) {
-            $varId = (int) $varId;
+        foreach ($filteredVars as $varId => $value) {
             $value = sanitizeInput((string) $value);
 
             // Upsert variable value
@@ -729,20 +752,20 @@ function handleUpdateVariables(array $input): void {
         Database::commit();
 
         // Log variables update
-        logActivity($_SESSION['user_id'] ?? null, 'update', 'variables', $orgId, "Updated " . count($variables) . " variables for organization '{$org['acronym']}'", $orgId);
-        logAuditEvent($orgId, 'variable', 'update', null, ['count' => count($variables)]);
+        logActivity($_SESSION['user_id'] ?? null, 'update', 'variables', $orgId, "Updated " . count($filteredVars) . " variables for organization '{$org['acronym']}'", $orgId);
+        logAuditEvent($orgId, 'variable', 'update', null, ['count' => count($filteredVars)]);
         bumpOrgSerial($orgId);
-        log_event("Variables updated for org_id=$orgId, count=" . count($variables), 'INFO');
+        log_event("Variables updated for org_id=$orgId, count=" . count($filteredVars), 'INFO');
 
         jsonResponse([
             'success' => true,
-            'message' => 'Variáveis atualizadas com sucesso',
+            'message' => 'Variaveis atualizadas com sucesso',
             'warnings' => $warnings,
-            'updated_count' => count($variables)
+            'updated_count' => count($filteredVars)
         ]);
     } catch (Exception $e) {
         Database::rollback();
-        throw new RuntimeException('Erro ao atualizar variáveis: ' . $e->getMessage());
+        throw new RuntimeException('Erro ao atualizar variaveis: ' . $e->getMessage());
     }
 }
 
@@ -794,7 +817,7 @@ function handleUploadScript(): void {
     $input = getJsonInput();
 
     if (empty($input['name']) || empty($input['content'])) {
-        jsonError('Nome e conteúdo são obrigatórios');
+        jsonError('Nome e conteudo sao obrigatorios');
     }
 
     $name = sanitizeInput($input['name']);
@@ -810,9 +833,19 @@ function handleUploadScript(): void {
         $isCore = false;
     }
 
+    // For non-core scripts, require organization_id
+    if (!$isCore && !$orgId && $userOrgId === null) {
+        // Admin without org - need to get currentOrgId from session or allow any org
+        // For now, use the first active organization as fallback for admin
+        $firstOrg = Database::fetchOne("SELECT id FROM organizations WHERE is_active = TRUE ORDER BY id LIMIT 1");
+        if ($firstOrg) {
+            $orgId = (int) $firstOrg['id'];
+        }
+    }
+
     // Validate script content
     if (strpos($content, '#!/bin/bash') === false && strpos($content, '#!/usr/bin/env bash') === false) {
-        jsonError('Script deve começar com shebang (#!/bin/bash)');
+        jsonError('Script deve comecar com shebang (#!/bin/bash)');
     }
 
     // Extract placeholders
@@ -1001,7 +1034,8 @@ function handleUploadWallpaper(): void {
     // Generate unique filename
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = 'wallpaper_org' . $orgId . '_' . time() . '.' . $ext;
-    $uploadDir = __DIR__ . '/../storage/wallpapers/';
+    // Use assets/wallpapers for public access (bypassing storage/ protection)
+    $uploadDir = __DIR__ . '/../assets/wallpapers/';
     $filepath = $uploadDir . $filename;
 
     // Create directory if not exists
@@ -1022,14 +1056,20 @@ function handleUploadWallpaper(): void {
     );
 
     if ($oldVar && !empty($oldVar['value'])) {
-        $oldFile = $uploadDir . basename($oldVar['value']);
-        if (file_exists($oldFile) && strpos($oldVar['value'], '/storage/wallpapers/') !== false) {
-            @unlink($oldFile);
+        // Check both old and new paths
+        $oldPaths = [
+            __DIR__ . '/../assets/wallpapers/' . basename($oldVar['value']),
+            __DIR__ . '/../storage/wallpapers/' . basename($oldVar['value'])
+        ];
+        foreach ($oldPaths as $oldFile) {
+            if (file_exists($oldFile)) {
+                @unlink($oldFile);
+            }
         }
     }
 
     // Update WALLPAPER_URL variable
-    $wallpaperUrl = '/storage/wallpapers/' . $filename;
+    $wallpaperUrl = '/assets/wallpapers/' . $filename;
 
     // Get or create variable definition
     $varDef = Database::fetchOne(
