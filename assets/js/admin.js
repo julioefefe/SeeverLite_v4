@@ -298,7 +298,7 @@ async function loadVariables(orgId) {
 function renderVariables(vars) {
     const varsList = document.getElementById('vars-list');
     if (!vars.length) {
-        varsList.innerHTML = '<div class="col-span-2 text-center py-8 text-slate-400">Nenhuma variável configurada. Clique em "+ Variável" para adicionar.</div>';
+        varsList.innerHTML = '<div class="col-span-2 text-center py-8 text-slate-400">Nenhuma variavel configurada. Clique em "+ Variavel" para adicionar.</div>';
         return;
     }
 
@@ -310,10 +310,35 @@ function renderVariables(vars) {
     });
 
     const categoryLabels = {
-        'dominio': 'Domínio e Autenticação', 'rede': 'Configuração de Rede',
-        'proxy': 'Proxy e Internet', 'inventario': 'Inventário',
-        'navegador': 'Navegador', 'seguranca': 'Segurança',
-        'branding': 'Identidade Visual', 'general': 'Geral', 'custom': 'Personalizadas'
+        'dominio': 'Dominio e Autenticacao', 'rede': 'Configuracao de Rede',
+        'proxy': 'Proxy e Internet', 'inventario': 'Inventario',
+        'navegador': 'Navegador', 'seguranca': 'Seguranca',
+        'branding': 'Identidade Visual', 'general': 'Geral', 'custom': 'Personalizadas',
+        'arquivos': 'Arquivos e Diretorios', 'acesso_remoto': 'Acesso Remoto',
+        'impressoras': 'Impressoras', 'certificados': 'Certificados', 'repositorios': 'Repositorios'
+    };
+
+    const renderInput = (v) => {
+        const type = v.type || 'string';
+        const value = v.current_value || '';
+        const placeholder = v.default_value || '';
+        const varId = v.id;
+
+        if (type === 'boolean') {
+            return `<select name="var_${varId}" data-var-id="${varId}" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="true" ${value === 'true' ? 'selected' : ''}>Verdadeiro (true)</option>
+                <option value="false" ${value === 'false' || value === '' ? 'selected' : ''}>Falso (false)</option>
+            </select>`;
+        } else if (type === 'password') {
+            return `<input type="password" name="var_${varId}" value="${Utils.escapeHtml(value)}" data-var-id="${varId}" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="******">`;
+        } else if (type === 'array') {
+            return `<textarea name="var_${varId}" data-var-id="${varId}" rows="2" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="${Utils.escapeHtml(placeholder)}">${Utils.escapeHtml(value)}</textarea>
+                <p class="text-slate-500 text-xs mt-1">Valores separados por virgula (ex: valor1, valor2, valor3)</p>`;
+        } else if (type === 'json') {
+            return `<textarea name="var_${varId}" data-var-id="${varId}" rows="3" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder='{"key": "value"}'>${Utils.escapeHtml(value)}</textarea>`;
+        } else {
+            return `<input type="text" name="var_${varId}" value="${Utils.escapeHtml(value)}" data-var-id="${varId}" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="${Utils.escapeHtml(placeholder)}">`;
+        }
     };
 
     let html = '';
@@ -324,9 +349,10 @@ function renderVariables(vars) {
                 <div class="var-row" data-var-name="${Utils.escapeHtml(v.name).toLowerCase()}" data-var-category="${Utils.escapeHtml(v.category || '')}">
                     <label class="block text-sm font-medium text-slate-300 mb-2">
                         ${Utils.escapeHtml(v.name)} ${v.is_required ? '<span class="text-red-400">*</span>' : ''}
+                        ${v.type && v.type !== 'string' ? `<span class="text-slate-600 text-xs ml-1">(${v.type})</span>` : ''}
                     </label>
-                    <input type="text" name="var_${v.id}" value="${Utils.escapeHtml(v.current_value || '')}" data-var-id="${v.id}" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="${Utils.escapeHtml(v.default_value || '')}" ${v.is_required ? 'required' : ''}>
-                    ${v.description ? `<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>` : ''}
+                    ${renderInput(v)}
+                    ${v.description && v.type !== 'array' ? `<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>` : ''}
                 </div>`;
         });
     }
@@ -380,33 +406,60 @@ async function loadVariableCatalog() {
 
 async function addVariable(e) {
     e.preventDefault();
-    if (!currentOrgId) { Toast.error('Selecione uma organização'); return; }
+    if (!currentOrgId) { Toast.error('Selecione uma organizacao'); return; }
 
     const name = document.getElementById('var-name').value.trim().toUpperCase();
     const value = document.getElementById('var-value').value;
     const description = document.getElementById('var-description').value;
+    const type = document.getElementById('var-type').value;
     const category = document.getElementById('var-category').value || 'general';
     const required = document.getElementById('var-required').checked;
 
-    if (!name) { Toast.error('Nome da variável é obrigatório'); return; }
+    if (!name) { Toast.error('Nome da variavel e obrigatorio'); return; }
 
     try {
         const response = await API.post('variables', {
             organization_id: currentOrgId,
-            name, value, description, category, required
+            name, value, description, type, category, required
         });
         if (response.success) {
-            Toast.success('Variável adicionada');
+            Toast.success('Variavel adicionada');
             closeModal('modal-add-variable');
             document.getElementById('add-variable-form').reset();
             await loadVariables(currentOrgId);
         } else {
-            Toast.error(response.error || 'Erro ao adicionar variável');
+            Toast.error(response.error || 'Erro ao adicionar variavel');
         }
     } catch (error) {
-        Toast.error('Erro ao adicionar variável');
+        Toast.error('Erro ao adicionar variavel');
     }
 }
+
+// Handle variable type change in the add variable modal
+document.getElementById('var-type')?.addEventListener('change', function() {
+    const arrayHint = document.getElementById('var-array-hint');
+    const valueInput = document.getElementById('var-value');
+    const wrapper = document.getElementById('var-value-input-wrapper');
+
+    if (this.value === 'array') {
+        arrayHint?.classList.remove('hidden');
+        valueInput.placeholder = 'valor1, valor2, valor3';
+    } else if (this.value === 'boolean') {
+        wrapper.innerHTML = `
+            <select id="var-value" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                <option value="true">Verdadeiro (true)</option>
+                <option value="false">Falso (false)</option>
+            </select>
+        `;
+        arrayHint?.classList.add('hidden');
+    } else if (this.value === 'password') {
+        wrapper.innerHTML = `<input type="password" id="var-value" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Digite a senha">`;
+        arrayHint?.classList.add('hidden');
+    } else {
+        arrayHint?.classList.add('hidden');
+        valueInput.placeholder = 'Digite o valor';
+    }
+});
 
 // ============================================================================
 // SCRIPTS
@@ -465,6 +518,7 @@ async function viewScript(scriptId) {
         const response = await API.get('script', { id: scriptId });
         if (response.success) {
             document.getElementById('script-modal-title').textContent = response.data.name;
+            document.getElementById('script-edit-id').value = response.data.id;
             document.getElementById('script-name').value = response.data.name;
             document.getElementById('script-description').value = response.data.description || '';
             document.getElementById('script-content').value = response.data.content;
@@ -493,19 +547,28 @@ async function uploadScript(e) {
     const description = document.getElementById('script-description').value.trim();
     const content = document.getElementById('script-content').value;
     const isCore = document.getElementById('script-is-core').value === 'true';
+    const editId = document.getElementById('script-edit-id').value;
 
     if (!name || !content) { Toast.error('Nome e conteúdo são obrigatórios'); return; }
 
     try {
-        const response = await API.post('scripts', {
-            name, description, content,
-            is_core: isCore,
-            organization_id: isCore ? null : currentOrgId
-        });
+        let response;
+        if (editId) {
+            response = await API.put('script', editId, {
+                name, description, content
+            });
+        } else {
+            response = await API.post('script-upload', {
+                name, description, content,
+                is_core: isCore,
+                organization_id: isCore ? null : currentOrgId
+            });
+        }
         if (response.success) {
-            Toast.success('Script salvo com sucesso');
+            Toast.success(editId ? 'Script atualizado' : 'Script salvo com sucesso');
             closeModal('modal-upload-script');
             document.getElementById('script-form').reset();
+            document.getElementById('script-edit-id').value = '';
             await loadOrgScripts(currentOrgId);
             if (isCore) await loadCoreScripts();
         } else { Toast.error(response.error || 'Erro ao salvar script'); }
@@ -852,7 +915,75 @@ function loadSettingsFromVariables() {
             el.value = varMap[varName];
         }
     });
+
+    // Update wallpaper preview if exists
+    updateWallpaperPreview();
 }
+
+function updateWallpaperPreview() {
+    const wallpaperUrl = document.getElementById('cfg-wallpaper-url')?.value;
+    const preview = document.getElementById('wallpaper-preview');
+    if (preview && wallpaperUrl) {
+        // If it's a local path, prefix with empty string, otherwise use as-is
+        const imgSrc = wallpaperUrl.startsWith('/') ? wallpaperUrl : wallpaperUrl;
+        preview.innerHTML = `<img src="${imgSrc}" alt="Wallpaper" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<svg class=\\'w-8 h-8 text-slate-600\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'2\\' d=\\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\\'/></svg>'">`;
+    }
+}
+
+async function handleWallpaperUpload(e) {
+    const file = e.target.files[0];
+    if (!file || !currentOrgId) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        Toast.error('Tipo de arquivo invalido. Use JPG, PNG, GIF ou WebP');
+        e.target.value = '';
+        return;
+    }
+
+    // Validate size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+        Toast.error('Arquivo muito grande. Maximo 5MB');
+        e.target.value = '';
+        return;
+    }
+
+    // Show preview immediately
+    const preview = document.getElementById('wallpaper-preview');
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        preview.innerHTML = `<img src="${ev.target.result}" alt="Preview" class="w-full h-full object-cover">`;
+    };
+    reader.readAsDataURL(file);
+
+    // Upload via API
+    const formData = new FormData();
+    formData.append('wallpaper', file);
+    formData.append('organization_id', currentOrgId);
+
+    try {
+        const response = await fetch('/api/?action=upload-wallpaper', {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            Toast.success('Wallpaper enviado com sucesso');
+            document.getElementById('cfg-wallpaper-url').value = data.data.url;
+            await loadVariables(currentOrgId);
+        } else {
+            Toast.error(data.error || 'Erro ao enviar wallpaper');
+        }
+    } catch (error) {
+        Toast.error('Erro ao enviar wallpaper');
+    }
+
+    e.target.value = '';
+}
+window.handleWallpaperUpload = handleWallpaperUpload;
 
 async function deleteOrganization() {
     if (!currentOrgId) return;
@@ -917,6 +1048,12 @@ function setupEventListeners() {
     // OM settings
     document.getElementById('om-settings-form').addEventListener('submit', (e) => { e.preventDefault(); updateOrganization(); });
     document.getElementById('btn-delete-org').addEventListener('click', deleteOrganization);
+
+    // Wallpaper upload
+    const wallpaperInput = document.getElementById('cfg-wallpaper-upload');
+    if (wallpaperInput) {
+        wallpaperInput.addEventListener('change', handleWallpaperUpload);
+    }
 
     // Logout
     document.getElementById('btn-logout').addEventListener('click', async () => {

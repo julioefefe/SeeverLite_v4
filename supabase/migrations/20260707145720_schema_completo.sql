@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS variable_definitions (
     description TEXT,
     default_value TEXT,
     category VARCHAR(50) DEFAULT 'general',
+    type VARCHAR(20) DEFAULT 'string',
     is_required BOOLEAN DEFAULT TRUE,
     display_order INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

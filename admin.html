@@ -281,8 +281,17 @@
                                         <input type="text" id="cfg-theme" data-var="THEME" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: Adwaita">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-300 mb-2">URL do Wallpaper</label>
-                                        <input type="text" id="cfg-wallpaper-url" data-var="WALLPAPER_URL" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="https://...">
+                                        <label class="block text-sm font-medium text-slate-300 mb-2">Wallpaper</label>
+                                        <div class="flex items-start gap-3">
+                                            <div id="wallpaper-preview" class="w-24 h-16 bg-slate-900 border border-slate-700 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="file" id="cfg-wallpaper-upload" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
+                                                <input type="text" id="cfg-wallpaper-url" data-var="WALLPAPER_URL" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm mb-2" placeholder="/storage/wallpapers/... ou URL externa">
+                                                <button type="button" onclick="document.getElementById('cfg-wallpaper-upload').click()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs text-white">Enviar Arquivo</button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-slate-300 mb-2">URL do Wallpaper de Login</label>
@@ -530,6 +539,7 @@
                     <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form id="script-form" class="p-6 space-y-4">
+                    <input type="hidden" id="script-edit-id" value="">
                     <input type="hidden" id="script-is-core" value="false">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Nome do Script *</label>
@@ -568,25 +578,53 @@
                         <datalist id="variable-catalog-list"></datalist>
                         <p class="text-slate-500 text-xs mt-1">Use o catálogo ou digite um nome personalizado</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Valor</label>
-                        <input type="text" id="var-value" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Descrição</label>
-                        <input type="text" id="var-description" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
+                            <select id="var-type" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                                <option value="string">Texto (string)</option>
+                                <option value="integer">Numero (integer)</option>
+                                <option value="boolean">Booleano (sim/nao)</option>
+                                <option value="array">Lista (array)</option>
+                                <option value="json">JSON</option>
+                                <option value="url">URL</option>
+                                <option value="ip">Endereco IP</option>
+                                <option value="cidr">CIDR (rede)</option>
+                                <option value="password">Senha</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Categoria</label>
-                            <input type="text" id="var-category" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" value="general">
+                            <select id="var-category" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                                <option value="dominio">Dominio e Autenticacao</option>
+                                <option value="rede">Configuracao de Rede</option>
+                                <option value="arquivos">Arquivos e Diretorios</option>
+                                <option value="navegadores">Navegadores</option>
+                                <option value="branding">Identidade Visual</option>
+                                <option value="inventario">Inventario</option>
+                                <option value="acesso_remoto">Acesso Remoto</option>
+                                <option value="impressoras">Impressoras</option>
+                                <option value="certificados">Certificados</option>
+                                <option value="repositorios">Repositorios</option>
+                                <option value="general">Geral</option>
+                                <option value="custom">Personalizada</option>
+                            </select>
                         </div>
-                        <div class="flex items-end pb-2">
-                            <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                <input type="checkbox" id="var-required" class="w-4 h-4 rounded">
-                                Obrigatória
-                            </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Valor</label>
+                        <div id="var-value-input-wrapper">
+                            <input type="text" id="var-value" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Digite o valor">
                         </div>
+                        <div id="var-array-hint" class="hidden text-slate-500 text-xs mt-1">Para arrays, separe valores por virgula (ex: 10.0.0.1, 10.0.0.2)</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Descricao</label>
+                        <input type="text" id="var-description" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="var-required" class="w-4 h-4 rounded">
+                        <label for="var-required" class="text-sm text-slate-300 cursor-pointer">Variavel obrigatoria</label>
                     </div>
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" class="modal-close px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium text-white">Cancelar</button>

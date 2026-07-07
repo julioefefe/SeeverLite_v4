@@ -264,11 +264,26 @@ try {
             if (!$id) {
                 jsonError('Script ID required', 400);
             }
-            if ($method === 'DELETE') {
+            if ($method === 'GET') {
+                handleGetScript((int) $id);
+            } elseif ($method === 'PUT') {
+                handleUpdateScript((int) $id, $input);
+            } elseif ($method === 'DELETE') {
                 handleDeleteScript((int) $id);
             } else {
                 jsonError('Method not allowed', 405);
             }
+            break;
+
+        // ===============================
+        // Wallpaper Upload Endpoint
+        // ===============================
+        case 'upload-wallpaper':
+            requireAuth();
+            if ($method !== 'POST') {
+                jsonError('Method not allowed', 405);
+            }
+            handleUploadWallpaper();
             break;
 
         // ===============================
@@ -588,7 +603,7 @@ function handleGetVariables(?string $orgId): void {
     $variables = Database::fetchAll(
         "SELECT vd.id, vd.name, vd.placeholder, vd.description, vd.category,
                 vd.default_value, COALESCE(ov.value, vd.default_value) AS current_value,
-                vd.is_required, vd.display_order
+                vd.is_required, vd.display_order, vd.type
          FROM variable_definitions vd
          LEFT JOIN organization_variables ov ON ov.organization_id = ? AND ov.variable_id = vd.id
          ORDER BY vd.display_order",
@@ -612,26 +627,27 @@ function handleAddVariable(array $input): void {
     $name = sanitizeInput($input['name'] ?? '');
     $value = $input['value'] ?? '';
     $description = sanitizeInput($input['description'] ?? '');
+    $type = sanitizeInput($input['type'] ?? 'string');
     $category = sanitizeInput($input['category'] ?? 'general');
     $required = !empty($input['required']);
 
     if (!$orgId || !$name) {
-        jsonError('organization_id e name são obrigatórios', 400);
+        jsonError('organization_id e name sao obrigatorios', 400);
     }
 
     // Permission check
     $userOrgId = getUserOrgId();
     if ($userOrgId !== null && $userOrgId !== $orgId) {
-        jsonError('Sem permissão para esta organização', 403);
+        jsonError('Sem permissao para esta organizacao', 403);
     }
 
     // Check if variable definition exists, create if not
     $varDef = Database::fetchOne("SELECT id FROM variable_definitions WHERE name = ?", [$name]);
     if (!$varDef) {
         Database::execute(
-            "INSERT INTO variable_definitions (name, placeholder, description, category, is_required)
-             VALUES (?, ?, ?, ?, ?)",
-            [$name, '{{' . $name . '}}', $description, $category, $required]
+            "INSERT INTO variable_definitions (name, placeholder, description, category, is_required, type)
+             VALUES (?, ?, ?, ?, ?, ?)",
+            [$name, '{{' . $name . '}}', $description, $category, $required, $type]
         );
         $varDefId = (int) Database::lastInsertId();
     } else {
@@ -660,7 +676,7 @@ function handleAddVariable(array $input): void {
 
     logAuditEvent($orgId, 'variable', 'create', $varDefId, ['name' => $name]);
 
-    jsonSuccess(['variable_id' => $varDefId], 'Variável adicionada com sucesso');
+    jsonSuccess(['variable_id' => $varDefId], 'Variavel adicionada com sucesso');
 }
 
 function handleUpdateVariables(array $input): void {
@@ -857,6 +873,73 @@ function handleUploadScript(): void {
 }
 
 /**
+ * Get single script details
+ */
+function handleGetScript(int $id): void {
+    $script = Database::fetchOne(
+        "SELECT id, name, filename, description, content, is_core, execution_order, version, organization_id,
+                created_at, updated_at
+         FROM scripts
+         WHERE id = ? AND is_active = TRUE",
+        [$id]
+    );
+
+    if (!$script) {
+        jsonError('Script não encontrado', 404);
+    }
+
+    // Permission check for operador_om
+    $userOrgId = getUserOrgId();
+    if ($userOrgId !== null && !$script['is_core'] && $script['organization_id'] !== $userOrgId) {
+        jsonError('Sem permissão para este script', 403);
+    }
+
+    jsonSuccess($script);
+}
+
+/**
+ * Update script
+ */
+function handleUpdateScript(int $id, array $input): void {
+    $script = Database::fetchOne(
+        "SELECT id, name, is_core, organization_id FROM scripts WHERE id = ? AND is_active = TRUE",
+        [$id]
+    );
+
+    if (!$script) {
+        jsonError('Script não encontrado', 404);
+    }
+
+    // Permission check
+    $userOrgId = getUserOrgId();
+    if ($userOrgId !== null && !$script['is_core'] && $script['organization_id'] !== $userOrgId) {
+        jsonError('Sem permissão para este script', 403);
+    }
+
+    $name = sanitizeInput($input['name'] ?? $script['name']);
+    $description = sanitizeInput($input['description'] ?? '');
+    $content = $input['content'] ?? '';
+
+    if (empty($name) || empty($content)) {
+        jsonError('Nome e conteúdo são obrigatórios');
+    }
+
+    // Validate script content
+    if (strpos($content, '#!/bin/bash') === false && strpos($content, '#!/usr/bin/env bash') === false) {
+        jsonError('Script deve começar com shebang (#!/bin/bash)');
+    }
+
+    Database::execute(
+        "UPDATE scripts SET name = ?, description = ?, content = ?, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [$name, $description, $content, $id]
+    );
+
+    logAuditEvent($script['organization_id'], 'script', 'update', $id, ['name' => $name]);
+
+    jsonSuccess(['id' => $id], 'Script atualizado com sucesso');
+}
+
+/**
  * Delete custom script (soft delete)
  */
 function handleDeleteScript(int $id): void {
@@ -881,6 +964,112 @@ function handleDeleteScript(int $id): void {
     logActivity($_SESSION['user_id'] ?? null, 'delete', 'script', $id, "Script '{$script['name']}' deleted");
 
     jsonSuccess(null, 'Script removido com sucesso');
+}
+
+/**
+ * Upload wallpaper image
+ */
+function handleUploadWallpaper(): void {
+    $orgId = (int) ($_POST['organization_id'] ?? $_GET['org_id'] ?? 0);
+
+    if (!$orgId) {
+        jsonError('Organization ID required', 400);
+    }
+
+    // Permission check
+    $userOrgId = getUserOrgId();
+    if ($userOrgId !== null && $userOrgId !== $orgId) {
+        jsonError('Sem permissao para esta organizacao', 403);
+    }
+
+    if (!isset($_FILES['wallpaper']) || $_FILES['wallpaper']['error'] !== UPLOAD_ERR_OK) {
+        jsonError('Nenhum arquivo enviado ou erro no upload', 400);
+    }
+
+    $file = $_FILES['wallpaper'];
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!in_array($file['type'], $allowedTypes)) {
+        jsonError('Tipo de arquivo nao permitido. Use JPG, PNG, GIF ou WebP', 400);
+    }
+
+    if ($file['size'] > $maxSize) {
+        jsonError('Arquivo muito grande. Maximo 5MB', 400);
+    }
+
+    // Generate unique filename
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $filename = 'wallpaper_org' . $orgId . '_' . time() . '.' . $ext;
+    $uploadDir = __DIR__ . '/../storage/wallpapers/';
+    $filepath = $uploadDir . $filename;
+
+    // Create directory if not exists
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        jsonError('Erro ao salvar arquivo', 500);
+    }
+
+    // Delete old wallpaper if exists
+    $oldVar = Database::fetchOne(
+        "SELECT ov.value FROM organization_variables ov
+         JOIN variable_definitions vd ON vd.id = ov.variable_id
+         WHERE ov.organization_id = ? AND vd.name = 'WALLPAPER_URL'",
+        [$orgId]
+    );
+
+    if ($oldVar && !empty($oldVar['value'])) {
+        $oldFile = $uploadDir . basename($oldVar['value']);
+        if (file_exists($oldFile) && strpos($oldVar['value'], '/storage/wallpapers/') !== false) {
+            @unlink($oldFile);
+        }
+    }
+
+    // Update WALLPAPER_URL variable
+    $wallpaperUrl = '/storage/wallpapers/' . $filename;
+
+    // Get or create variable definition
+    $varDef = Database::fetchOne(
+        "SELECT id FROM variable_definitions WHERE name = 'WALLPAPER_URL'"
+    );
+
+    if (!$varDef) {
+        Database::execute(
+            "INSERT INTO variable_definitions (name, placeholder, description, category, type, is_required)
+             VALUES ('WALLPAPER_URL', '{{WALLPAPER_URL}}', 'URL do wallpaper da organizacao', 'branding', 'url', FALSE)"
+        );
+        $varDefId = (int) Database::lastInsertId();
+    } else {
+        $varDefId = (int) $varDef['id'];
+    }
+
+    // Upsert organization variable
+    $existing = Database::fetchOne(
+        "SELECT id FROM organization_variables WHERE organization_id = ? AND variable_id = ?",
+        [$orgId, $varDefId]
+    );
+
+    if ($existing) {
+        Database::execute(
+            "UPDATE organization_variables SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            [$wallpaperUrl, $existing['id']]
+        );
+    } else {
+        Database::execute(
+            "INSERT INTO organization_variables (organization_id, variable_id, value) VALUES (?, ?, ?)",
+            [$orgId, $varDefId, $wallpaperUrl]
+        );
+    }
+
+    logAuditEvent($orgId, 'variable', 'update', $varDefId, ['name' => 'WALLPAPER_URL', 'action' => 'upload']);
+
+    jsonSuccess([
+        'url' => $wallpaperUrl,
+        'filename' => $filename
+    ], 'Wallpaper enviado com sucesso');
 }
 
 /**

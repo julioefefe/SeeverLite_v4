@@ -38,4 +38,8 @@ Options -Indexes
 
 # Block access to sensitive directories
 RedirectMatch 403 ^/install/
+RedirectMatch 403 ^/storage/logs/
+
+# Allow wallpapers to be served publicly
+RewriteCond %{REQUEST_URI} !^/storage/wallpapers/
 RedirectMatch 403 ^/storage/
