@@ -283,7 +283,7 @@ window.selectOrganization = selectOrganization;
 // ============================================================================
 async function loadVariables(orgId) {
     try {
-        const response = await API.get(`variables&id=${orgId}`);
+        const response = await API.get('variables', { id: orgId });
         if (!response.success) { Toast.error('Erro ao carregar variáveis'); return; }
 
         allVariables = response.data.variables || [];
@@ -413,7 +413,7 @@ async function addVariable(e) {
 // ============================================================================
 async function loadOrgScripts(orgId) {
     try {
-        const response = await API.get(`scripts&org=${orgId}`);
+        const response = await API.get('scripts', { org: orgId });
         if (!response.success) return;
         renderScriptsList(response.data);
     } catch (error) { console.error('Scripts error:', error); }
@@ -462,7 +462,7 @@ window.switchScriptTab = switchScriptTab;
 
 async function viewScript(scriptId) {
     try {
-        const response = await API.get(`script&id=${scriptId}`);
+        const response = await API.get('script', { id: scriptId });
         if (response.success) {
             document.getElementById('script-modal-title').textContent = response.data.name;
             document.getElementById('script-name').value = response.data.name;
@@ -544,7 +544,7 @@ async function loadCoreScripts() {
 // ============================================================================
 async function loadScriptsForBundle(orgId) {
     try {
-        const response = await API.get(`scripts&org=${orgId}`);
+        const response = await API.get('scripts', { org: orgId });
         if (!response.success) return;
 
         const list = document.getElementById('bundle-scripts-list');
@@ -625,7 +625,8 @@ async function loadUsers() {
                 <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded ${user.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${user.is_active ? 'Ativo' : 'Bloqueado'}</span></td>
                 <td class="px-6 py-4 text-right">
                     <button onclick="editUser(${user.id})" class="text-blue-400 hover:text-blue-300 text-sm mr-3">Editar</button>
-                    <button onclick="toggleUserStatus(${user.id}, ${user.is_active ? 'false' : 'true'})" class="text-amber-400 hover:text-amber-300 text-sm">${user.is_active ? 'Bloquear' : 'Ativar'}</button>
+                    <button onclick="toggleUserStatus(${user.id}, ${user.is_active ? 'false' : 'true'})" class="text-amber-400 hover:text-amber-300 text-sm mr-3">${user.is_active ? 'Bloquear' : 'Ativar'}</button>
+                    <button onclick="deleteUser(${user.id})" class="text-red-400 hover:text-red-300 text-sm">Excluir</button>
                 </td>
             </tr>
         `).join('');
@@ -669,6 +670,18 @@ async function toggleUserStatus(userId, activate) {
 }
 window.toggleUserStatus = toggleUserStatus;
 
+async function deleteUser(userId) {
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
+    try {
+        const response = await API.delete('user', userId);
+        if (response.success) {
+            Toast.success('Usuário excluído');
+            await loadUsers();
+        } else { Toast.error(response.error || 'Erro ao excluir usuário'); }
+    } catch (error) { Toast.error('Erro ao excluir usuário'); }
+}
+window.deleteUser = deleteUser;
+
 async function saveUser(e) {
     e.preventDefault();
     const editId = document.getElementById('user-edit-id').value;
@@ -676,8 +689,21 @@ async function saveUser(e) {
     const fullName = document.getElementById('user-fullname').value;
     const email = document.getElementById('user-email').value;
     const password = document.getElementById('user-password').value;
+    const confirmPassword = document.getElementById('user-confirm-password').value;
     const role = document.getElementById('user-role').value;
     const orgId = document.getElementById('user-organization').value || null;
+
+    // Validate password match for new users
+    if (!editId && password !== confirmPassword) {
+        Toast.error('As senhas não conferem');
+        return;
+    }
+
+    // Validate password match when changing password
+    if (editId && password && password !== confirmPassword) {
+        Toast.error('As senhas não conferem');
+        return;
+    }
 
     try {
         let response;
@@ -712,7 +738,7 @@ async function saveUser(e) {
 // ============================================================================
 async function loadAuditEvents() {
     try {
-        const response = await API.get('audit&limit=100');
+        const response = await API.get('audit', { limit: 100 });
         if (!response.success) return;
 
         const tbody = document.getElementById('audit-tbody');

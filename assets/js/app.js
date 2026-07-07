@@ -7,16 +7,32 @@
 const API = {
     baseUrl: '/api/',
 
-    async request(action, method = 'GET', data = null) {
-        // Build URL with action parameter
-        const url = `${this.baseUrl}?action=${encodeURIComponent(action)}`;
+    /**
+     * Build URL with proper query string encoding
+     * @param {string} action - The API action
+     * @param {Object} params - Additional query parameters
+     * @returns {string} - Properly encoded URL
+     */
+    buildUrl(action, params = {}) {
+        const url = new URL(this.baseUrl, window.location.origin);
+        url.searchParams.set('action', action);
+        for (const [key, value] of Object.entries(params)) {
+            if (value !== undefined && value !== null) {
+                url.searchParams.set(key, value);
+            }
+        }
+        return url.toString();
+    },
+
+    async request(action, method = 'GET', data = null, params = {}) {
+        const url = this.buildUrl(action, params);
 
         const options = {
             method,
             headers: {
                 'Content-Type': 'application/json'
             },
-            credentials: 'same-origin' // Include cookies for session
+            credentials: 'same-origin'
         };
 
         if (data && method !== 'GET') {
@@ -35,8 +51,8 @@ const API = {
         }
     },
 
-    async get(action) {
-        return this.request(action, 'GET');
+    async get(action, params = {}) {
+        return this.request(action, 'GET', null, params);
     },
 
     async post(action, data) {
@@ -44,11 +60,11 @@ const API = {
     },
 
     async put(action, id, data) {
-        return this.request(`${action}&id=${id}`, 'PUT', data);
+        return this.request(action, 'PUT', data, { id });
     },
 
     async delete(action, id) {
-        return this.request(`${action}&id=${id}`, 'DELETE');
+        return this.request(action, 'DELETE', null, { id });
     }
 };
 
