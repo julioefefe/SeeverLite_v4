@@ -447,11 +447,11 @@ function handleGetOrganization(int $id): void {
 function handleCreateOrganization(array $input): void {
     // Only admin_gap can create organizations
     if (!isAdminGap()) {
-        jsonError('Sem permissão para criar organizações', 403);
+        jsonError('Sem permissao para criar organizacoes', 403);
     }
 
     if (empty($input['name']) || empty($input['acronym'])) {
-        jsonError('Nome e sigla são obrigatórios');
+        jsonError('Nome e sigla sao obrigatorios');
     }
 
     $acronym = strtoupper(sanitizeInput($input['acronym']));
@@ -466,7 +466,7 @@ function handleCreateOrganization(array $input): void {
     );
 
     if ($existing) {
-        jsonError('Sigla já cadastrada');
+        jsonError('Sigla ja cadastrada');
     }
 
     try {
@@ -480,17 +480,12 @@ function handleCreateOrganization(array $input): void {
 
         $orgId = (int) Database::lastInsertId();
 
-        // Create default variables for this organization
-        $defaultVars = Database::fetchAll(
-            "SELECT id, default_value FROM variable_definitions"
+        // Copy all default variables for this organization in a single query
+        Database::execute(
+            "INSERT INTO organization_variables (organization_id, variable_id, value)
+             SELECT ?, id, COALESCE(default_value, '') FROM variable_definitions",
+            [$orgId]
         );
-
-        foreach ($defaultVars as $var) {
-            Database::execute(
-                "INSERT INTO organization_variables (organization_id, variable_id, value) VALUES (?, ?, ?)",
-                [$orgId, $var['id'], $var['default_value']]
-            );
-        }
 
         Database::commit();
 
@@ -499,10 +494,16 @@ function handleCreateOrganization(array $input): void {
         logAuditEvent($orgId, 'organization', 'create', $orgId, ['acronym' => $acronym, 'name' => $name]);
         log_event("Organization created: acronym=$acronym, name=$name, org_id=$orgId", 'INFO');
 
-        jsonSuccess(['id' => $orgId], 'Organização criada com sucesso');
+        // Return the created organization
+        $org = Database::fetchOne(
+            "SELECT id, name, acronym, domain, description, is_active, created_at, updated_at FROM organizations WHERE id = ?",
+            [$orgId]
+        );
+
+        jsonSuccess($org, 'Organizacao criada com sucesso');
     } catch (Exception $e) {
         Database::rollback();
-        throw new RuntimeException('Erro ao criar organização: ' . $e->getMessage());
+        throw new RuntimeException('Erro ao criar organizacao: ' . $e->getMessage());
     }
 }
 
