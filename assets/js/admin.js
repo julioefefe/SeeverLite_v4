@@ -380,16 +380,17 @@ window.filterVariables = filterVariables;
 
 async function saveVariables() {
     if (!currentOrgId) return;
-    const inputs = document.querySelectorAll('#vars-form input[data-var-id]');
+    // Include both input and textarea for array types
+    const inputs = document.querySelectorAll('#vars-form input[data-var-id], #vars-form textarea[data-var-id], #vars-form select[data-var-id]');
     const variables = {};
     inputs.forEach(input => { variables[input.dataset.varId] = input.value; });
 
     try {
         const response = await API.post('variables-update', { organization_id: currentOrgId, variables });
-        if (response.success) Toast.success('Variáveis salvas com sucesso');
-        else Toast.error(response.error || 'Erro ao salvar variáveis');
+        if (response.success) Toast.success('Variaveis salvas com sucesso');
+        else Toast.error(response.error || 'Erro ao salvar variaveis');
     } catch (error) {
-        Toast.error('Erro ao salvar variáveis');
+        Toast.error('Erro ao salvar variaveis');
     }
 }
 

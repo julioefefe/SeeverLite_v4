@@ -305,7 +305,7 @@ function isValidOCSTag(string $tag): bool {
  * Validate variable value based on name with detailed error messages
  * Returns array with 'valid' boolean and 'errors' array
  */
-function validateVariableValue(string $name, string $value): array {
+function validateVariableValue(string $name, string $value, ?string $varType = null): array {
     $errors = [];
     $warnings = [];
     $value = trim($value);
@@ -316,17 +316,30 @@ function validateVariableValue(string $name, string $value): array {
         'DOMINIO' => [
             'required' => true,
             'type' => 'domain',
-            'description' => 'Domínio AD completo'
+            'description' => 'Dominio AD completo'
         ],
         'DOMINIO_NETBIOS' => [
             'required' => true,
             'type' => 'netbios',
-            'description' => 'Nome NetBIOS do domínio'
+            'description' => 'Nome NetBIOS do dominio'
         ],
         'DC_IP' => [
             'required' => true,
-            'type' => 'ip',
-            'description' => 'IP do Controlador de Domínio'
+            'type' => 'array',
+            'item_type' => 'ip',
+            'description' => 'IP(s) do Controlador de Dominio'
+        ],
+        'DNS_PRIMARIO' => [
+            'required' => true,
+            'type' => 'array',
+            'item_type' => 'ip',
+            'description' => 'DNS primario(s)'
+        ],
+        'DNS_SECUNDARIO' => [
+            'required' => false,
+            'type' => 'array',
+            'item_type' => 'ip',
+            'description' => 'DNS secundario(s)'
         ],
         'DNS_INTERNET' => [
             'required' => true,
@@ -336,7 +349,7 @@ function validateVariableValue(string $name, string $value): array {
         'BASE_URL' => [
             'required' => true,
             'type' => 'url',
-            'description' => 'URL base do repositório de scripts'
+            'description' => 'URL base do repositorio de scripts'
         ],
         'OCS_SERVER' => [
             'required' => true,
@@ -346,12 +359,12 @@ function validateVariableValue(string $name, string $value): array {
         'OCS_TAG' => [
             'required' => true,
             'type' => 'ocstag',
-            'description' => 'Tag OCS da organização'
+            'description' => 'Tag OCS da organizacao'
         ],
         'PRINT_SERVER' => [
             'required' => false,
             'type' => 'ip',
-            'description' => 'Servidor de impressão'
+            'description' => 'Servidor de impressao'
         ],
         'PROXY_HTTP' => [
             'required' => false,
@@ -371,7 +384,7 @@ function validateVariableValue(string $name, string $value): array {
         'HOMEPAGE' => [
             'required' => false,
             'type' => 'domain_or_url',
-            'description' => 'Página inicial do portal'
+            'description' => 'Pagina inicial do portal'
         ],
         'GRUPO_ADMIN_AD' => [
             'required' => true,
@@ -397,23 +410,62 @@ function validateVariableValue(string $name, string $value): array {
             'required' => false,
             'type' => 'url',
             'description' => 'URL do logo da OM'
+        ],
+        'COMPARTILHAMENTOS' => [
+            'required' => false,
+            'type' => 'array',
+            'item_type' => 'string',
+            'description' => 'Compartilhamentos de rede'
+        ],
+        'PRINTERS' => [
+            'required' => false,
+            'type' => 'array',
+            'item_type' => 'string',
+            'description' => 'Impressoras'
+        ],
+        'NO_PROXY' => [
+            'required' => false,
+            'type' => 'array',
+            'item_type' => 'string',
+            'description' => 'Hosts sem proxy'
         ]
     ];
 
     $rule = $validationRules[$name] ?? null;
 
-    if (!$rule) {
-        // Unknown variable - just check if not empty for required
-        if (empty($value)) {
-            $warnings[] = "Variável desconhecida: $name";
+    // If variable type from DB is array, override rule type
+    if ($varType === 'array' && $rule) {
+        $rule['type'] = 'array';
+        if (!isset($rule['item_type'])) {
+            $rule['item_type'] = 'string';
         }
-        return ['valid' => true, 'errors' => [], 'warnings' => $warnings];
+    }
+
+    if (!$rule) {
+        // Unknown variable - use type from DB if provided
+        if ($varType === 'array') {
+            // Validate as array (comma-separated values)
+            $values = array_map('trim', array_filter(explode(',', $value)));
+            if (empty($value) || empty($values)) {
+                return ['valid' => true, 'errors' => [], 'warnings' => ["Array vazio para variavel desconhecida: $name"]];
+            }
+        }
+        return ['valid' => true, 'errors' => [], 'warnings' => []];
     }
 
     // Check required
     if ($rule['required'] && empty($value)) {
-        $errors[] = "{$rule['description']} é obrigatório";
+        $errors[] = "{$rule['description']} e obrigatorio";
         return ['valid' => false, 'errors' => $errors, 'warnings' => $warnings];
+    }
+
+    // For array types, check if at least one value exists
+    if ($rule['type'] === 'array' && $rule['required']) {
+        $values = array_map('trim', array_filter(explode(',', $value)));
+        if (empty($values)) {
+            $errors[] = "{$rule['description']} e obrigatorio. Informe pelo menos um valor.";
+            return ['valid' => false, 'errors' => $errors, 'warnings' => $warnings];
+        }
     }
 
     // Skip validation if empty and not required
@@ -423,64 +475,104 @@ function validateVariableValue(string $name, string $value): array {
 
     // Type-specific validation
     switch ($rule['type']) {
+        case 'array':
+            // For arrays, validate each item
+            if (!empty($value)) {
+                $values = array_map('trim', array_filter(explode(',', $value)));
+                $itemType = $rule['item_type'] ?? 'string';
+
+                foreach ($values as $idx => $item) {
+                    $itemResult = validateSingleValue($item, $itemType, $rule['description'], $idx + 1);
+                    if (!$itemResult['valid']) {
+                        $errors = array_merge($errors, $itemResult['errors']);
+                        $valid = false;
+                    }
+                }
+            }
+            break;
+
         case 'ip':
             if (!isValidIPorCIDR($value)) {
-                $errors[] = "{$rule['description']} deve ser um IP válido (ex: 192.168.1.1)";
+                $errors[] = "{$rule['description']} deve ser um IP valido (ex: 192.168.1.1)";
                 $valid = false;
             }
             break;
 
         case 'url':
             if (!isValidURL($value)) {
-                $errors[] = "{$rule['description']} deve ser uma URL válida (ex: http://server.com)";
+                $errors[] = "{$rule['description']} deve ser uma URL valida (ex: http://server.com)";
                 $valid = false;
             }
             break;
 
         case 'domain':
             if (!isValidDomain($value)) {
-                $errors[] = "{$rule['description']} deve ser um domínio válido (ex: comara.intraer)";
+                $errors[] = "{$rule['description']} deve ser um dominio valido (ex: comara.intraer)";
                 $valid = false;
             }
             break;
 
         case 'domain_or_url':
             if (!isValidDomain($value) && !isValidURL($value)) {
-                $errors[] = "{$rule['description']} deve ser um domínio ou URL válida";
+                $errors[] = "{$rule['description']} deve ser um dominio ou URL valida";
                 $valid = false;
             }
             break;
 
         case 'netbios':
             if (!isValidNetBIOS($value)) {
-                $errors[] = "{$rule['description']} deve ter no máximo 15 caracteres alfanuméricos";
+                $errors[] = "{$rule['description']} deve ter no maximo 15 caracteres alfanumericos";
                 $valid = false;
             }
             break;
 
         case 'port':
             if (!isValidPort($value)) {
-                $errors[] = "{$rule['description']} deve ser uma porta válida (1-65535)";
+                $errors[] = "{$rule['description']} deve ser uma porta valida (1-65535)";
                 $valid = false;
             }
             break;
 
         case 'group':
             if (!isValidGroupName($value)) {
-                $errors[] = "{$rule['description']} formato inválido de grupo";
+                $errors[] = "{$rule['description']} formato invalido de grupo";
                 $valid = false;
             }
             break;
 
         case 'ocstag':
             if (!isValidOCSTag($value)) {
-                $errors[] = "{$rule['description']} deve conter apenas letras, números, hífen e underline (máx 50 chars)";
+                $errors[] = "{$rule['description']} deve conter apenas letras, numeros, hifen e underline (max 50 chars)";
                 $valid = false;
             }
             break;
     }
 
     return ['valid' => $valid, 'errors' => $errors, 'warnings' => $warnings];
+}
+
+/**
+ * Validate a single value for array items
+ */
+function validateSingleValue(string $value, string $type, string $description, int $index): array {
+    $errors = [];
+    $valid = true;
+    $value = trim($value);
+
+    if (empty($value)) {
+        return ['valid' => true, 'errors' => []];
+    }
+
+    switch ($type) {
+        case 'ip':
+            if (!isValidIPorCIDR($value)) {
+                $errors[] = "$description - valor $index ('{$value}') nao e um IP valido";
+                $valid = false;
+            }
+            break;
+    }
+
+    return ['valid' => $valid, 'errors' => $errors];
 }
 
 /**
@@ -492,22 +584,25 @@ function validateAllVariables(array $variables): array {
     $allErrors = [];
     $allWarnings = [];
 
-    // Get variable definitions
+    // Get variable definitions including type
     $varDefs = Database::fetchAll(
-        "SELECT id, name FROM variable_definitions ORDER BY display_order"
+        "SELECT id, name, type FROM variable_definitions ORDER BY display_order"
     );
 
     $varNames = [];
+    $varTypes = [];
     foreach ($varDefs as $def) {
         $varNames[$def['id']] = $def['name'];
+        $varTypes[$def['id']] = $def['type'];
     }
 
     foreach ($variables as $varId => $value) {
         $varId = (int) $varId;
         $name = $varNames[$varId] ?? "ID:$varId";
+        $type = $varTypes[$varId] ?? null;
         $value = trim($value);
 
-        $result = validateVariableValue($name, $value);
+        $result = validateVariableValue($name, $value, $type);
 
         if (!$result['valid']) {
             $allErrors = array_merge($allErrors, $result['errors']);
@@ -540,6 +635,10 @@ function replacePlaceholders(string $content, array $variables): string {
  * substituir_placeholders - Replace {{VARIAVEL}} placeholders in script content
  * with values from the organization's variables.
  *
+ * For array-type variables:
+ * - {{VAR_NAME}} -> first value
+ * - {{VAR_NAME_LIST}} -> space-separated list of all values
+ *
  * If a variable is not found, the placeholder is kept and a warning is logged.
  *
  * @param string $conteudo Script content with {{PLACEHOLDER}} tokens
@@ -552,33 +651,60 @@ function substituir_placeholders(string $conteudo, int $orgId): array {
         [$orgId]
     );
     if (!$org) {
-        throw new RuntimeException('Organização não encontrada');
+        throw new RuntimeException('Organizacao nao encontrada');
     }
 
+    // Include type in the query to handle array types
     $vars = Database::fetchAll(
-        "SELECT vd.name, COALESCE(ov.value, vd.default_value) AS value
+        "SELECT vd.name, vd.type, COALESCE(ov.value, vd.default_value) AS value
          FROM variable_definitions vd
          LEFT JOIN organization_variables ov ON ov.organization_id = ? AND ov.variable_id = vd.id",
         [$orgId]
     );
 
     $varMap = [];
+    $varTypeMap = [];
     foreach ($vars as $v) {
         $varMap[$v['name']] = $v['value'] ?? '';
+        $varTypeMap[$v['name']] = $v['type'] ?? 'string';
     }
     $varMap['OM_ACRONYM'] = $org['acronym'];
     $varMap['OM_NAME'] = $org['name'];
     $varMap['OM_DOMAIN'] = $org['domain'] ?? '';
+    $varTypeMap['OM_ACRONYM'] = 'string';
+    $varTypeMap['OM_NAME'] = 'string';
+    $varTypeMap['OM_DOMAIN'] = 'string';
 
     $placeholders = extractPlaceholders($conteudo);
     $warnings = [];
     $result = $conteudo;
 
     foreach ($placeholders as $name) {
-        if (array_key_exists($name, $varMap)) {
-            $result = str_replace('{{' . $name . '}}', $varMap[$name], $result);
+        // Check if this is a _LIST variant
+        $isList = str_ends_with($name, '_LIST');
+        $baseName = $isList ? substr($name, 0, -5) : $name;
+
+        if (array_key_exists($baseName, $varMap)) {
+            $value = $varMap[$baseName];
+            $type = $varTypeMap[$baseName] ?? 'string';
+
+            if ($type === 'array') {
+                $values = array_map('trim', array_filter(explode(',', $value)));
+                if ($isList) {
+                    // {{VAR_NAME_LIST}} -> space-separated
+                    $replaceValue = implode(' ', $values);
+                } else {
+                    // {{VAR_NAME}} -> first value
+                    $replaceValue = $values[0] ?? '';
+                }
+            } else {
+                // Non-array types: same value for both
+                $replaceValue = $value;
+            }
+
+            $result = str_replace('{{' . $name . '}}', $replaceValue, $result);
         } else {
-            $warnings[] = "Variável não definida: $name (placeholder mantido)";
+            $warnings[] = "Variavel nao definida: $name (placeholder mantido)";
         }
     }
 
