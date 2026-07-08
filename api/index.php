@@ -1574,13 +1574,13 @@ function handleGenerateBundle(array $input): void {
     $scriptIds = $input['script_ids'] ?? [];
 
     if (!$orgId || empty($scriptIds)) {
-        jsonError('organization_id e script_ids são obrigatórios', 400);
+        jsonError('organization_id e script_ids sao obrigatorios', 400);
     }
 
-    // Permission check: operador can only generate for their own org
+    // Permission check: operador_om can only generate for their own org
     $userOrgId = getUserOrgId();
     if ($userOrgId !== null && $userOrgId !== $orgId) {
-        jsonError('Sem permissão para esta organização', 403);
+        jsonError('Sem permissao para esta organizacao', 403);
     }
 
     // Verify org exists
