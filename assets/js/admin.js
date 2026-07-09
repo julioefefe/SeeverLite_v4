@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateUserUI();
         applyRolePermissions();
     } catch (e) {
+        console.error('Session check failed:', e);
         window.location.href = '/login.html';
         return;
     }
@@ -124,7 +125,8 @@ function applyRolePermissions() {
     document.getElementById('btn-new-user')?.classList.toggle('hidden', !isAdmin);
 
     if (currentUser.role === 'operador_om') {
-        document.getElementById('orgs-section').style.display = 'none';
+        const orgsSection = document.getElementById('orgs-section');
+        if (orgsSection) orgsSection.style.display = 'none';
     }
 }
 
@@ -192,6 +194,7 @@ async function loadDashboard() {
 
 function renderRecentOrgs() {
     const el = document.getElementById('recent-orgs');
+    if (!el) return;
     if (!organizations.length) {
         el.innerHTML = '<p class="text-slate-400 text-center">Nenhuma organizacao cadastrada</p>';
         return;
@@ -228,7 +231,7 @@ async function loadOrganizations() {
             return `
                 <button class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left" data-org-id="${org.id}" onclick="selectOrganization(${org.id})">
                     <div class="org-logo">
-                        ${logoUrl ? `<img src="${Utils.escapeHtml(logoUrl)}" alt="${Utils.escapeHtml(org.acronym)}" class="w-full h-full object-cover rounded" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span style="display:none;">${initials}</span>` : initials}
+                        ${logoUrl ? `<img src="${Utils.escapeHtml(logoUrl)}" alt="${Utils.escapeHtml(org.acronym)}" class="w-full h-full object-cover rounded" onerror="this.style.display='none'">` : initials}
                     </div>
                     <div class="overflow-hidden">
                         <span class="block font-medium truncate">${Utils.escapeHtml(org.acronym)}</span>
@@ -261,14 +264,14 @@ async function selectOrganization(orgId) {
     document.getElementById('view-dashboard').classList.add('hidden');
     document.getElementById('view-om-detail').classList.remove('hidden');
 
-    // Header with logo
     const logoUrl = org.logo_url || '';
     const initials = org.acronym.substring(0, 3);
-    document.getElementById('om-acronym-badge').innerHTML = logoUrl
-        ? `<img src="${Utils.escapeHtml(logoUrl)}" alt="${Utils.escapeHtml(org.acronym)}" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none';this.parentElement.textContent='${initials}';">${initials}</img>`
+    const badge = document.getElementById('om-acronym-badge');
+    badge.innerHTML = logoUrl
+        ? `<img src="${Utils.escapeHtml(logoUrl)}" alt="${Utils.escapeHtml(org.acronym)}" class="w-full h-full object-cover rounded-xl" onerror="this.parentElement.textContent='${initials}'">`
         : initials;
     document.getElementById('om-display-name').textContent = org.name;
-    document.getElementById('om-display-domain').textContent = org.domain || 'Sem dominio configurado';
+    document.getElementById('om-display-domain').textContent = org.domain || 'Sem dominio';
 
     document.getElementById('edit-org-name').value = org.name;
     document.getElementById('edit-org-acronym').value = org.acronym;
@@ -299,6 +302,7 @@ async function loadVariables(orgId) {
 
 function renderVariables(vars) {
     const varsList = document.getElementById('vars-list');
+    if (!varsList) return;
     if (!vars.length) {
         varsList.innerHTML = '<div class="text-center py-8 text-slate-400">Nenhuma variavel configurada.</div>';
         return;
@@ -328,7 +332,7 @@ function renderVariables(vars) {
     tabsHtml += '</div>';
     varsList.innerHTML = tabsHtml;
 
-    // Filter variables based on category and search
+    // Filter variables
     const search = (document.getElementById('var-search')?.value || '').toLowerCase();
     let filteredVars = vars;
 
@@ -365,11 +369,9 @@ function renderVariables(vars) {
         return `<input type="text" name="var_${varId}" value="${Utils.escapeHtml(value)}" data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="${Utils.escapeHtml(placeholder)}">`;
     };
 
-    // Group by category if showing all
     let varsHtml = '<div class="grid lg:grid-cols-2 gap-4 mt-4">';
 
     if (activeCategory === 'Todas') {
-        // Group by category
         categories.forEach(cat => {
             const catVars = filteredVars.filter(v => (v.category || 'general') === cat);
             if (!catVars.length) return;
@@ -397,7 +399,6 @@ function renderVariables(vars) {
 function renderVariableRow(v, renderInput) {
     const isImageVar = v.name === 'WALLPAPER_URL' || v.name === 'LOGO_URL';
     const varId = v.id;
-    const value = v.current_value || '';
 
     let extraHtml = '';
     if (isImageVar) {
@@ -463,11 +464,8 @@ async function uploadImage(type, varId, input) {
 
         if (data.success) {
             Toast.success('Imagem enviada');
-            // Update the input field
-            const varInput = document.querySelector(`input[data-var-id="${varId}"], textarea[data-var-id="${varId}"]`);
-            if (varInput) {
-                varInput.value = data.data.url;
-            }
+            const varInput = document.querySelector(`input[data-var-id="${varId}"]`);
+            if (varInput) varInput.value = data.data.url;
         } else {
             Toast.error(data.error || 'Erro ao enviar');
         }
@@ -513,9 +511,9 @@ function switchTab(tabName) {
         activeBtn.classList.add('active', 'border-blue-500', 'text-blue-400');
         activeBtn.classList.remove('border-transparent', 'text-slate-400');
     }
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-    const activeContent = document.getElementById(`tab-${tabName}`);
-    if (activeContent) activeContent.classList.remove('hidden');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    const content = document.getElementById(`tab-${tabName}`);
+    if (content) content.classList.remove('hidden');
 }
 window.switchTab = switchTab;
 
@@ -601,27 +599,6 @@ async function updateOrganization() {
     } catch (e) {
         Toast.error('Erro ao atualizar');
     }
-}
-
-function deleteOrganization() {
-    if (!currentOrgId) return;
-    if (!confirm('Tem certeza que deseja excluir esta organizacao?')) return;
-
-    (async () => {
-        try {
-            const res = await API.delete('organization', currentOrgId);
-            if (res.success) {
-                Toast.success('Organizacao excluida');
-                showView('dashboard');
-                await loadDashboard();
-                await loadOrganizations();
-            } else {
-                Toast.error(res.error || 'Erro ao excluir');
-            }
-        } catch (e) {
-            Toast.error('Erro ao excluir');
-        }
-    })();
 }
 
 // Users
@@ -741,10 +718,6 @@ async function loadCoreScripts() {
                         <span class="font-medium text-white">${Utils.escapeHtml(s.name)}</span>
                         <span class="text-slate-500 text-sm ml-2">${s.filename}</span>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="viewScript(${s.id})" class="text-blue-400 hover:text-blue-300 text-sm">Ver</button>
-                        <button onclick="deleteScript(${s.id})" class="text-red-400 hover:text-red-300 text-sm">Excluir</button>
-                    </div>
                 </div>
                 ${s.description ? `<p class="text-slate-400 text-sm mt-2">${Utils.escapeHtml(s.description)}</p>` : ''}
             </div>
@@ -756,29 +729,21 @@ async function loadCoreScripts() {
 
 // Event listeners
 function setupEventListeners() {
-    // New organization
     document.getElementById('btn-new-org')?.addEventListener('click', () => openModal('modal-new-org'));
     document.getElementById('new-org-form')?.addEventListener('submit', (e) => { e.preventDefault(); createOrganization(); });
 
-    // Show network config when domain is filled
     document.getElementById('new-org-domain')?.addEventListener('input', function() {
         const config = document.getElementById('new-org-network-config');
-        if (this.value.trim()) {
-            config?.classList.remove('hidden');
-        } else {
-            config?.classList.add('hidden');
-        }
+        if (this.value.trim()) config?.classList.remove('hidden');
+        else config?.classList.add('hidden');
     });
 
-    // Edit organization
     document.getElementById('btn-edit-org')?.addEventListener('click', () => openModal('modal-edit-org'));
     document.getElementById('edit-org-form')?.addEventListener('submit', (e) => { e.preventDefault(); updateOrganization(); });
 
-    // Save variables
     document.getElementById('btn-save-vars')?.addEventListener('click', saveVariables);
     document.getElementById('var-search')?.addEventListener('input', () => renderVariables(allVariables));
 
-    // User form
     document.getElementById('user-form')?.addEventListener('submit', saveUser);
     document.getElementById('btn-new-user')?.addEventListener('click', () => {
         document.getElementById('user-form')?.reset();
@@ -786,13 +751,11 @@ function setupEventListeners() {
         openModal('modal-new-user');
     });
 
-    // Logout
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
         try { await API.post('logout'); } catch (e) {}
         window.location.href = '/login.html';
     });
 
-    // Generate bundle
     document.getElementById('btn-generate-bundle')?.addEventListener('click', async () => {
         if (!currentOrgId) return;
         try {
@@ -810,22 +773,17 @@ function setupEventListeners() {
         }
     });
 
-    // Modal close buttons
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', () => btn.closest('.fixed')?.classList.add('hidden'));
     });
 
-    // Backdrop click to close
     document.querySelectorAll('.modal-backdrop').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (e.target === btn) btn.closest('.fixed')?.classList.add('hidden');
         });
     });
 
-    // Escape to close
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.fixed:not(.hidden)').forEach(m => m.classList.add('hidden'));
-        }
+        if (e.key === 'Escape') document.querySelectorAll('.fixed:not(.hidden)').forEach(m => m.classList.add('hidden'));
     });
 }

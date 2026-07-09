@@ -6,7 +6,6 @@
 require_once __DIR__ . '/../lib/config.php';
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/functions.php';
-require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -166,6 +165,7 @@ try {
 }
 
 // ============ HANDLERS ============
+// Note: Helper functions (jsonSuccess, jsonError, sanitizeInput, etc.) are in lib/functions.php
 
 function handleLogin($input) {
     $username = sanitizeInput($input['username'] ?? '');
@@ -217,16 +217,28 @@ function handleLogout() {
 function handleSessionCheck() {
     if (isLoggedIn()) {
         $user = getCurrentUser();
-        jsonSuccess($user, 'Sessao ativa');
+
+        // Get organization info
+        $org = null;
+        if ($user['organization_id']) {
+            $org = Database::fetchOne("SELECT id, acronym, name, domain FROM organizations WHERE id = ?", [$user['organization_id']]);
+        }
+
+        jsonSuccess([
+            'id' => $user['id'],
+            'username' => $user['username'],
+            'full_name' => $user['username'], // Fallback to username
+            'role' => $user['role'],
+            'organization_id' => $user['organization_id'],
+            'org_acronym' => $org['acronym'] ?? null,
+            'org_name' => $org['name'] ?? null
+        ], 'Sessao ativa');
     } else {
         jsonResponse(['success' => false, 'error' => 'Not authenticated'], 200);
     }
 }
 
 function handleDashboard() {
-    $orgId = getUserOrgId();
-    $where = $orgId ? "WHERE id = $orgId" : '';
-
     $stats = [
         'organizations' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM organizations WHERE is_active = true")['c'],
         'scripts' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM scripts WHERE is_active = true")['c'],
@@ -516,7 +528,6 @@ function handleGenerateBundle($input) {
     $orgId = (int)($input['organization_id'] ?? 0);
     if (!$orgId) jsonError('Organization ID required');
 
-    // Simple bundle generation - return success with placeholder URL
     $filename = 'bundle_' . $orgId . '_' . date('YmdHis') . '.sh';
 
     jsonSuccess(['url' => '/downloads/' . $filename, 'filename' => $filename]);
@@ -554,7 +565,6 @@ function handleUploadWallpaper() {
 
     $wallpaperUrl = '/assets/wallpapers/' . $filename;
 
-    // Update WALLPAPER_URL variable
     Database::execute(
         "UPDATE organization_variables ov SET value = ?
          FROM variable_definitions vd
@@ -597,7 +607,6 @@ function handleUploadLogo() {
 
     $logoUrl = '/assets/logos/' . $filename;
 
-    // Update LOGO_URL variable
     Database::execute(
         "UPDATE organization_variables ov SET value = ?
          FROM variable_definitions vd
@@ -606,54 +615,4 @@ function handleUploadLogo() {
     );
 
     jsonSuccess(['url' => $logoUrl, 'filename' => $filename], 'Logo enviado');
-}
-
-function jsonSuccess($data, $message = '') {
-    jsonResponse(['success' => true, 'data' => $data, 'message' => $message], 200);
-}
-
-function jsonError($message, $code = 400) {
-    jsonResponse(['success' => false, 'error' => $message], $code);
-}
-
-function jsonResponse($data, $code = 200) {
-    http_response_code($code);
-    echo json_encode($data);
-    exit;
-}
-
-function sanitizeInput($str) {
-    return htmlspecialchars(trim($str ?? ''), ENT_QUOTES, 'UTF-8');
-}
-
-function requireAuth() {
-    if (!isLoggedIn()) {
-        jsonError('Autenticacao necessaria', 401);
-    }
-}
-
-function isAdminGap() {
-    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin_gap';
-}
-
-function getUserOrgId() {
-    return $_SESSION['organization_id'] ?? null;
-}
-
-function isLoggedIn() {
-    return isset($_SESSION['user_id']);
-}
-
-function getCurrentUser() {
-    if (!isLoggedIn()) return null;
-    return [
-        'id' => $_SESSION['user_id'],
-        'username' => $_SESSION['username'],
-        'role' => $_SESSION['role'],
-        'organization_id' => $_SESSION['organization_id'] ?? null
-    ];
-}
-
-function log_event($msg, $level = 'INFO') {
-    error_log("[$level] $msg");
 }

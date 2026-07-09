@@ -103,20 +103,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Collapsible sections */
-details summary {
-    cursor: pointer;
-    list-style: none;
-}
-
-details summary::-webkit-details-marker {
-    display: none;
-}
-
-details[open] summary .chevron {
-    transform: rotate(90deg);
-}
-
 /* Variable inputs */
 .var-row input[type="text"],
 .var-row input[type="password"],
