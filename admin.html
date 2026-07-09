@@ -314,22 +314,57 @@
                     <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form id="new-org-form" class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Nome Completo *</label>
-                        <input type="text" id="new-org-name" required class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: Comando da Comara">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Nome Completo *</label>
+                            <input type="text" id="new-org-name" required class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: Comando da Comara">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Sigla *</label>
+                            <input type="text" id="new-org-acronym" required maxlength="20" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white uppercase" placeholder="Ex: COMARA">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Dominio AD</label>
+                            <input type="text" id="new-org-domain" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: comara.intraer">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Descricao</label>
+                            <textarea id="new-org-description" rows="2" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white resize-none"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Sigla *</label>
-                        <input type="text" id="new-org-acronym" required maxlength="20" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white uppercase" placeholder="Ex: COMARA">
+
+                    <!-- Configuracoes de Rede (exibido apenas se dominio informado) -->
+                    <div id="new-org-network-config" class="border-t border-slate-700 pt-4 mt-4 hidden">
+                        <h4 class="text-sm font-semibold text-slate-300 mb-3">Configuracoes de Rede</h4>
+                        <p class="text-xs text-slate-500 mb-4">Preencha as informacoes de rede para o dominio informado.</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">DC Principal (IP) *</label>
+                                <input type="text" id="new-org-dc-ip" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.51">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">DNS Primario (IP) *</label>
+                                <input type="text" id="new-org-dns-primario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.51">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">DNS Secundario</label>
+                                <input type="text" id="new-org-dns-secundario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.52">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Homepage</label>
+                                <input type="text" id="new-org-homepage" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: www.comara.intraer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Proxy HTTP</label>
+                                <input type="text" id="new-org-proxy-http" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.88.4">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Porta do Proxy</label>
+                                <input type="number" id="new-org-proxy-porta" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 8080">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Domínio AD</label>
-                        <input type="text" id="new-org-domain" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: comara.intraer">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Descrição</label>
-                        <textarea id="new-org-description" rows="2" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white resize-none"></textarea>
-                    </div>
+
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" class="modal-close px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium text-white">Cancelar</button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white">Criar OM</button>

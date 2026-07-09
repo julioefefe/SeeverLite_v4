@@ -459,6 +459,25 @@ function handleCreateOrganization(array $input): void {
     $domain = sanitizeInput($input['domain'] ?? '');
     $description = sanitizeInput($input['description'] ?? '');
 
+    // Additional fields for variable initialization
+    $dcIp = sanitizeInput($input['dc_ip'] ?? '');
+    $dnsPrimario = sanitizeInput($input['dns_primario'] ?? '');
+    $dnsSecundario = sanitizeInput($input['dns_secundario'] ?? '');
+    $proxyHttp = sanitizeInput($input['proxy_http'] ?? '');
+    $proxyPorta = sanitizeInput($input['proxy_porta'] ?? '');
+    $homepage = sanitizeInput($input['homepage'] ?? '');
+    $displayName = sanitizeInput($input['display_name'] ?? $name);
+
+    // Validate required fields if domain is provided
+    if ($domain) {
+        if (empty($dcIp)) {
+            jsonError('DC_IP (IP do Controlador de Dominio) e obrigatorio quando dominio e informado');
+        }
+        if (empty($dnsPrimario)) {
+            jsonError('DNS Primario e obrigatorio quando dominio e informado');
+        }
+    }
+
     // Check if acronym already exists
     $existing = Database::fetchOne(
         "SELECT id FROM organizations WHERE acronym = ?",
@@ -487,16 +506,38 @@ function handleCreateOrganization(array $input): void {
             [$orgId]
         );
 
+        // Generate OU_PADRAO from domain (OU=Estacoes,DC=domain,DC=tld)
+        $ouPadrao = '';
+        if ($domain) {
+            $dcParts = explode('.', $domain);
+            $ouPadrao = 'OU=Estacoes,' . implode(',', array_map(function($part) { return "DC=$part"; }, $dcParts));
+        }
+
         // Override specific variables with dynamic values based on the new organization
         $dynamicValues = [
             'DOMINIO' => $domain,
             'DOMINIO_NETBIOS' => $acronym,
             'OM_ACRONYM' => $acronym,
             'OM_NAME' => $name,
+            'DISPLAY_NAME' => $displayName,
             'BASE_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
             'WALLPAPER_URL' => $domain ? "https://softwarelivre.{$domain}/wallpapers/default.jpg" : '',
             'LOGO_URL' => $domain ? "https://softwarelivre.{$domain}/logos/default.png" : '',
+            'HOMEPAGE' => $homepage ?: ($domain ? "www.{$domain}" : ''),
+            'OCS_SERVER' => $domain ? "http://ocs.{$domain}/ocsinventory" : '',
+            'OCS_TAG' => $acronym . '-ESTACOES',
+            'PROXY_URL' => $domain ? "http://proxy.{$domain}:8080" : '',
+            'NO_PROXY' => $domain ? "localhost,127.0.0.1,{$domain}" : '',
+            'OU_PADRAO' => $ouPadrao,
+            'REPOSITORY_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
         ];
+
+        // Add user-provided values
+        if ($dcIp) $dynamicValues['DC_IP'] = $dcIp;
+        if ($dnsPrimario) $dynamicValues['DNS_PRIMARIO'] = $dnsPrimario;
+        if ($dnsSecundario) $dynamicValues['DNS_SECUNDARIO'] = $dnsSecundario;
+        if ($proxyHttp) $dynamicValues['PROXY_HTTP'] = $proxyHttp;
+        if ($proxyPorta) $dynamicValues['PROXY_PORTA'] = $proxyPorta;
 
         foreach ($dynamicValues as $varName => $varValue) {
             Database::execute(

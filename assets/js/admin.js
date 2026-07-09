@@ -320,6 +320,8 @@ function renderVariables(vars) {
         'impressoras': 'Impressoras', 'certificados': 'Certificados', 'repositorios': 'Repositorios'
     };
 
+    const categoryOrder = ['dominio', 'rede', 'proxy', 'repositorios', 'navegador', 'branding', 'arquivos', 'impressoras', 'inventario', 'acesso_remoto', 'certificados', 'seguranca', 'general', 'custom'];
+
     const renderInput = (v) => {
         const type = v.type || 'string';
         const value = v.current_value || '';
@@ -344,23 +346,41 @@ function renderVariables(vars) {
     };
 
     let html = '';
-    for (const [category, categoryVars] of Object.entries(categories)) {
-        html += `<div class="col-span-2"><h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 mt-4 first:mt-0">${categoryLabels[category] || category}</h4></div>`;
-        categoryVars.forEach(v => {
-            html += `
-                <div class="var-row" data-var-name="${Utils.escapeHtml(v.name).toLowerCase()}" data-var-category="${Utils.escapeHtml(v.category || '')}">
-                    <label class="block text-sm font-medium text-slate-300 mb-2">
-                        ${Utils.escapeHtml(v.name)} ${v.is_required ? '<span class="text-red-400">*</span>' : ''}
-                        ${v.type && v.type !== 'string' ? `<span class="text-slate-600 text-xs ml-1"
-        }
-        )
-    }
-}>(${v.type})</span>` : ''}
-                    </label>
-                    ${renderInput(v)}
-                    ${v.description && v.type !== 'array' ? `<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>` : ''}
-                </div>`;
-        });
+    // Sort categories by order
+    const sortedCats = Object.keys(categories).sort((a, b) => {
+        const aIdx = categoryOrder.indexOf(a);
+        const bIdx = categoryOrder.indexOf(b);
+        if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+        if (aIdx === -1) return 1;
+        if (bIdx === -1) return -1;
+        return aIdx - bIdx;
+    });
+
+    for (const category of sortedCats) {
+        const categoryVars = categories[category];
+        const catLabel = categoryLabels[category] || category;
+        const varCount = categoryVars.length;
+        const firstCat = category === sortedCats[0];
+
+        html += `
+            <details class="col-span-2 var-section" data-category="${Utils.escapeHtml(category)}" ${firstCat ? 'open' : ''}>
+                <summary class="flex items-center justify-between cursor-pointer py-2 px-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-sm font-semibold text-slate-300">
+                    <span>${catLabel}</span>
+                    <span class="text-slate-500 text-xs">${varCount} variaveis</span>
+                </summary>
+                <div class="grid lg:grid-cols-2 gap-x-6 gap-y-3 mt-3 px-1">
+                    ${categoryVars.map(v => `
+                        <div class="var-row" data-var-name="${Utils.escapeHtml(v.name).toLowerCase()}" data-var-category="${Utils.escapeHtml(v.category || '')}">
+                            <label class="block text-sm font-medium text-slate-300 mb-2">
+                                ${Utils.escapeHtml(v.name)} ${v.is_required ? '<span class="text-red-400">*</span>' : ''}
+                                ${v.type && v.type !== 'string' ? `<span class="text-slate-600 text-xs ml-1">(${v.type})</span>` : ''}
+                            </label>
+                            ${renderInput(v)}
+                            ${v.description && v.type !== 'array' ? `<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </details>`;
     }
     varsList.innerHTML = html;
 }
@@ -374,12 +394,31 @@ function populateCategoryFilter(vars) {
 function filterVariables() {
     const search = document.getElementById('var-search').value.toLowerCase();
     const category = document.getElementById('var-category-filter').value;
+
+    // Track which sections have matching variables
+    const sectionsWithMatches = new Set();
+
     document.querySelectorAll('.var-row').forEach(row => {
         const name = row.dataset.varName;
         const cat = row.dataset.varCategory;
         const nameMatch = !search || name.includes(search);
         const catMatch = !category || cat === category;
-        row.style.display = (nameMatch && catMatch) ? '' : 'none';
+        const visible = nameMatch && catMatch;
+        row.style.display = visible ? '' : 'none';
+
+        if (visible) {
+            sectionsWithMatches.add(cat);
+        }
+    });
+
+    // Auto-expand sections that have matches when searching
+    document.querySelectorAll('.var-section').forEach(section => {
+        const cat = section.dataset.category;
+        if (search && sectionsWithMatches.has(cat)) {
+            section.setAttribute('open', '');
+        } else if (category && cat === category) {
+            section.setAttribute('open', '');
+        }
     });
 }
 window.filterVariables = filterVariables;
@@ -839,19 +878,37 @@ async function createOrganization() {
     const domain = document.getElementById('new-org-domain').value.trim();
     const description = document.getElementById('new-org-description').value.trim();
 
-    if (!name || !acronym) { Toast.error('Nome e sigla são obrigatórios'); return; }
+    // Network configuration fields
+    const dc_ip = document.getElementById('new-org-dc-ip')?.value.trim() || '';
+    const dns_primario = document.getElementById('new-org-dns-primario')?.value.trim() || '';
+    const dns_secundario = document.getElementById('new-org-dns-secundario')?.value.trim() || '';
+    const homepage = document.getElementById('new-org-homepage')?.value.trim() || '';
+    const proxy_http = document.getElementById('new-org-proxy-http')?.value.trim() || '';
+    const proxy_porta = document.getElementById('new-org-proxy-porta')?.value.trim() || '';
+
+    if (!name || !acronym) { Toast.error('Nome e sigla sao obrigatorios'); return; }
+
+    // If domain is provided, validate required network fields
+    if (domain) {
+        if (!dc_ip) { Toast.error('DC Principal (IP) e obrigatorio quando dominio e informado'); return; }
+        if (!dns_primario) { Toast.error('DNS Primario e obrigatorio quando dominio e informado'); return; }
+    }
 
     try {
-        const response = await API.post('organizations', { name, acronym, domain, description });
+        const response = await API.post('organizations', {
+            name, acronym, domain, description,
+            dc_ip, dns_primario, dns_secundario, homepage, proxy_http, proxy_porta
+        });
         if (response.success) {
-            Toast.success('Organização criada com sucesso');
+            Toast.success('Organizacao criada com sucesso');
             closeModal('modal-new-org');
             document.getElementById('new-org-form').reset();
+            document.getElementById('new-org-network-config').classList.add('hidden');
             await loadDashboard();
             await loadOrganizations();
             if (response.data && response.data.id) selectOrganization(response.data.id);
-        } else { Toast.error(response.error || 'Erro ao criar organização'); }
-    } catch (error) { Toast.error('Erro ao criar organização'); }
+        } else { Toast.error(response.error || 'Erro ao criar organizacao'); }
+    } catch (error) { Toast.error('Erro ao criar organizacao'); }
 }
 
 async function updateOrganization() {
@@ -946,6 +1003,19 @@ function setupEventListeners() {
     // New OM
     document.getElementById('btn-new-org').addEventListener('click', () => openModal('modal-new-org'));
     document.getElementById('new-org-form').addEventListener('submit', (e) => { e.preventDefault(); createOrganization(); });
+
+    // Show/hide network config when domain is filled
+    const domainInput = document.getElementById('new-org-domain');
+    if (domainInput) {
+        domainInput.addEventListener('input', function() {
+            const networkConfig = document.getElementById('new-org-network-config');
+            if (this.value.trim()) {
+                networkConfig.classList.remove('hidden');
+            } else {
+                networkConfig.classList.add('hidden');
+            }
+        });
+    }
 
     // Save variables
     document.getElementById('btn-save-vars').addEventListener('click', saveVariables);
