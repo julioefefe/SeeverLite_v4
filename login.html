@@ -13,13 +13,12 @@
     <div class="login-card card">
         <div class="card-body">
             <div class="login-logo">
-                <img src="/assets/images/logos/seederlinux-logo.svg" alt="SeederLinux" onerror="this.style.display='none'">
+                <img src="/assets/images/logos/seederlinux-logo.svg" alt="SeederLinux">
                 <div class="login-logo-text">
                     <div class="brand">SeederLinux Lite</div>
                     <div class="sub">Sistema de Configuracao</div>
                 </div>
             </div>
-
             <form id="login-form">
                 <div class="form-group">
                     <label class="form-label">Usuario</label>
@@ -35,37 +34,21 @@
         </div>
     </div>
 </div>
-
 <script>
 const API = {
     post: async (action, data) => {
         const url = new URL('/api/', location.origin);
         url.searchParams.set('action', action);
-        return (await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-            credentials: 'same-origin'
-        })).json();
+        return (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), credentials: 'same-origin' })).json();
     }
 };
-
 document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const errEl = document.getElementById('login-error');
     errEl.classList.add('hidden');
-
-    const res = await API.post('login', {
-        username: document.getElementById('login-user').value,
-        password: document.getElementById('login-pass').value
-    });
-
-    if (res.success) {
-        location.href = '/admin.html';
-    } else {
-        errEl.textContent = res.error || 'Erro ao autenticar';
-        errEl.classList.remove('hidden');
-    }
+    const res = await API.post('login', { username: document.getElementById('login-user').value, password: document.getElementById('login-pass').value });
+    if (res.success) { location.href = '/admin.html'; }
+    else { errEl.textContent = res.error || 'Erro ao autenticar'; errEl.classList.remove('hidden'); }
 });
 </script>
 </body>

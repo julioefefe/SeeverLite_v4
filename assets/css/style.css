@@ -186,7 +186,7 @@ tr:last-child{border-bottom:none}
 .org-logo-img{width:100%;height:100%;object-fit:cover}
 .org-logo-placeholder{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;font-weight:700;font-size:.875rem;display:flex;align-items:center;justify-content:center}
 
-/* Org list nav items - updated */
+/* Org list nav items */
 .om-nav-item{display:flex;align-items:center;gap:.625rem;padding:.5rem .625rem;border-radius:.5rem;color:var(--muted);cursor:pointer;background:transparent;border:none;width:100%;text-align:left;transition:all .15s}
 .om-nav-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
 .om-nav-item.active{background:rgba(59,130,246,.15);color:var(--primary)}

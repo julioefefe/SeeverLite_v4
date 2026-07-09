@@ -91,7 +91,6 @@ const Toast = {
 };
 
 // ── Modal — usa style.display diretamente (sem classes) ───────────────────────
-// Isso evita que modals abram automaticamente quando a pagina carrega
 
 function openModal(id) {
     const el = document.getElementById(id);
@@ -110,7 +109,6 @@ window.closeModal = closeModal;
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Garantia extra: esconder todos os modals ao iniciar
     closeAllModals();
 
     try {
@@ -167,7 +165,6 @@ function showView(name) {
         document.getElementById('page-title').textContent = titles[name][0];
         document.getElementById('page-subtitle').textContent = titles[name][1];
     }
-    // Data loaders
     if (name === 'users') loadUsers();
     if (name === 'scripts-core') loadAllScripts();
     if (name === 'stations') loadStations();
@@ -222,7 +219,6 @@ async function loadOrganizations() {
         </button>
     `).join('') || '<p class="text-xs text-muted p-3 text-center">Nenhuma OM</p>';
 
-    // User org select
     const sel = document.getElementById('user-org-select');
     if (sel) sel.innerHTML = '<option value="">Nenhuma</option>' + organizations.map(o => `<option value="${o.id}">${esc(o.acronym)}</option>`).join('');
 }
@@ -239,14 +235,12 @@ async function selectOrganization(orgId) {
 
     showView('om-detail');
 
-    // Header - using org-logo classes for consistent sizing
     const badge = document.getElementById('om-badge');
     badge.innerHTML = org.logo_url ? `<img src="${esc(org.logo_url)}" alt="" class="org-logo-img" onerror="this.parentElement.textContent='${esc(org.acronym.substring(0,3))}'">` : esc(org.acronym.substring(0, 3));
     document.getElementById('om-name').textContent = org.name;
     document.getElementById('om-acronym').textContent = org.acronym;
     document.getElementById('om-domain').textContent = org.domain || 'Sem dominio';
 
-    // Edit form
     document.getElementById('edit-org-name').value = org.name;
     document.getElementById('edit-org-acronym').value = org.acronym;
     document.getElementById('edit-org-domain').value = org.domain || '';
@@ -265,7 +259,6 @@ async function loadVariables(orgId) {
     if (!res.success) { Toast.error(res.error || 'Erro ao carregar variaveis'); return; }
     allVariables = res.data.variables || [];
 
-    // Load image galleries
     try {
         const [wr, lr] = await Promise.all([API.get('wallpapers', { org_id: orgId }), API.get('logos', { org_id: orgId })]);
         uploadedImages.wallpapers = wr.success ? wr.data.images : [];
@@ -289,7 +282,6 @@ function renderVariables() {
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
     });
 
-    // Category tab bar
     let tabHtml = `<div class="cat-tabs"><button class="cat-tab ${activeCategory === 'Todas' ? 'active' : ''}" onclick="filterByCategory('Todas')">Todas</button>`;
     cats.forEach(c => { tabHtml += `<button class="cat-tab ${activeCategory === c ? 'active' : ''}" onclick="filterByCategory('${c}')">${catLabel[c] || c}</button>`; });
     tabHtml += '</div>';
@@ -674,10 +666,8 @@ window.loadAuditEvents = loadAuditEvents;
 // ── Event Listeners ───────────────────────────────────────────────────────────
 
 function setupListeners() {
-    // Logout
     document.getElementById('btn-logout')?.addEventListener('click', async () => { await API.post('logout'); location.href = '/login.html'; });
 
-    // Nav buttons
     document.getElementById('btn-new-org')?.addEventListener('click', () => {
         document.getElementById('new-org-form')?.reset();
         openModal('modal-new-org');
@@ -692,10 +682,8 @@ function setupListeners() {
     document.getElementById('btn-save-vars')?.addEventListener('click', saveVariables);
     document.getElementById('btn-generate-bundle')?.addEventListener('click', generateBundle);
 
-    // Variable search
     document.getElementById('var-search')?.addEventListener('input', debounce(renderVariables, 250));
 
-    // Forms
     document.getElementById('new-org-form')?.addEventListener('submit', createOrganization);
     document.getElementById('edit-org-form')?.addEventListener('submit', updateOrganization);
     document.getElementById('user-form')?.addEventListener('submit', saveUser);
@@ -715,6 +703,5 @@ function setupListeners() {
         else Toast.error(res.error);
     });
 
-    // Escape key closes modals
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
 }

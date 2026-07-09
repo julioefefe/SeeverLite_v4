@@ -38,8 +38,6 @@ try {
     jsonError('Erro interno: ' . $e->getMessage(), 500);
 }
 
-// ── Handlers ──────────────────────────────────────────────────────────────────
-
 function handleSession() {
     if (!isset($_SESSION['user_id'])) jsonError('Nao autenticado', 401);
     $user = Database::fetchOne("SELECT u.id, u.username, u.full_name, u.email, u.role, u.organization_id, o.acronym as org_acronym FROM users u LEFT JOIN organizations o ON o.id=u.organization_id WHERE u.id=?", [$_SESSION['user_id']]);
@@ -114,7 +112,6 @@ function handleCreateOrganization() {
     Database::execute("INSERT INTO organizations (name, acronym, domain, description) VALUES (?, ?, ?, ?)", [$name, $acronym, $domain, $description]);
     $orgId = Database::lastInsertId();
 
-    // Create default variable values for the organization
     Database::execute("INSERT INTO organization_variables (organization_id, variable_id, value) SELECT ?, id, default_value FROM variable_definitions", [$orgId]);
 
     generateDefaultVariables($orgId, $name, $acronym, $domain, $dcIp, $dnsPrimario, $dnsSecundario);
@@ -187,12 +184,7 @@ function handleUpdateVariables() {
 
 function handleGetScripts() {
     requireAuth();
-    $orgId = intval($_GET['org_id'] ?? 0);
-    if ($orgId) {
-        $scripts = Database::fetchAll("SELECT id, name, filename, description, is_core FROM scripts ORDER BY is_core DESC, name");
-    } else {
-        $scripts = Database::fetchAll("SELECT id, name, filename, description, is_core FROM scripts ORDER BY is_core DESC, name");
-    }
+    $scripts = Database::fetchAll("SELECT id, name, filename, description, is_core FROM scripts ORDER BY is_core DESC, name");
     jsonSuccess($scripts);
 }
 
@@ -213,11 +205,10 @@ function handleCreateScript() {
     $filename = sanitizeInput($data['filename'] ?? '');
     $description = sanitizeInput($data['description'] ?? '');
     $content = $data['content'] ?? '';
-    $isCore = false;
 
     if (!$name || !$filename || !$content) jsonError('Nome, arquivo e conteudo obrigatorios', 400);
 
-    Database::execute("INSERT INTO scripts (name, filename, description, content, is_core) VALUES (?, ?, ?, ?, ?)", [$name, $filename, $description, $content, $isCore]);
+    Database::execute("INSERT INTO scripts (name, filename, description, content, is_core) VALUES (?, ?, ?, ?, false)", [$name, $filename, $description, $content]);
     $id = Database::lastInsertId();
     log_audit('create', 'script', $id, ['name' => $name]);
     jsonSuccess(['id' => $id], 'Script criado');
@@ -365,7 +356,6 @@ function handleGenerateBundle() {
     $org = Database::fetchOne("SELECT * FROM organizations WHERE id=?", [$orgId]);
     if (!$org) jsonError('Organizacao nao encontrada', 404);
 
-    // Generate bundle content
     $bundleContent = "#!/bin/bash\n# Bundle para " . $org['name'] . " (" . $org['acronym'] . ")\n# Gerado em: " . date('Y-m-d H:i:s') . "\n\n";
 
     if (!empty($scriptIds)) {
@@ -373,18 +363,14 @@ function handleGenerateBundle() {
         $scripts = Database::fetchAll("SELECT * FROM scripts WHERE id IN ($placeholders) ORDER BY name", $scriptIds);
         foreach ($scripts as $script) {
             $content = substituir_placeholders($script['content'], $orgId);
-            $bundleContent .= "\n# ────────────────────────────────────────\n";
-            $bundleContent .= "# Script: " . $script['name'] . "\n";
-            $bundleContent .= "# ────────────────────────────────────────\n";
+            $bundleContent .= "\n# Script: " . $script['name'] . "\n";
             $bundleContent .= $content . "\n";
         }
     }
 
-    // Log bundle generation
     Database::execute("INSERT INTO bundles (organization_id, script_count, created_by) VALUES (?, ?, ?)", [$orgId, count($scriptIds), $_SESSION['user_id']]);
     log_audit('generate_bundle', 'bundle', null, ['org_id' => $orgId, 'scripts' => count($scriptIds)]);
 
-    // Return bundle for download
     $filename = "bundle_" . $org['acronym'] . "_" . date('Ymd_His') . ".sh";
     $dataUri = "data:application/x-sh;base64," . base64_encode($bundleContent);
 
