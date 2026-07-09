@@ -83,9 +83,7 @@ function handleSessionCheck() {
 
 function handleDashboard() {
     $userOrgId = getUserOrgId();
-    $isAdmin = isAdminGap();
 
-    // Base stats
     $stats = [
         'organizations' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM organizations WHERE is_active = true")['c'],
         'scripts' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM scripts WHERE is_active = true")['c'],
@@ -96,52 +94,18 @@ function handleDashboard() {
         'recent_stations' => []
     ];
 
-    // Bundles this month
-    $bundlesCount = Database::fetchOne(
-        "SELECT COUNT(*) as c FROM deploy_bundles WHERE generated_at >= date_trunc('month', CURRENT_DATE)"
-    );
+    $bundlesCount = Database::fetchOne("SELECT COUNT(*) as c FROM deploy_bundles WHERE generated_at >= date_trunc('month', CURRENT_DATE)");
     $stats['bundles_this_month'] = (int)($bundlesCount['c'] ?? 0);
 
-    // Stations online (last 2 hours)
     $twoHoursAgo = date('Y-m-d H:i:s', strtotime('-2 hours'));
     if ($userOrgId !== null) {
-        $stats['stations_online'] = (int)Database::fetchOne(
-            "SELECT COUNT(*) as c FROM stations WHERE organization_id = ? AND last_checkin >= ?",
-            [$userOrgId, $twoHoursAgo]
-        )['c'];
-        $stats['stations_outdated'] = (int)Database::fetchOne(
-            "SELECT COUNT(*) as c FROM stations s
-             JOIN organizations o ON o.id = s.organization_id
-             WHERE s.organization_id = ? AND s.configuration_serial < o.serial_config",
-            [$userOrgId]
-        )['c'];
-        $stats['recent_stations'] = Database::fetchAll(
-            "SELECT hostname, ip_address, last_checkin,
-                    CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status
-             FROM stations s
-             JOIN organizations o ON o.id = s.organization_id
-             WHERE s.organization_id = ?
-             ORDER BY last_checkin DESC LIMIT 10",
-            [$userOrgId]
-        );
+        $stats['stations_online'] = (int)Database::fetchOne("SELECT COUNT(*) as c FROM stations WHERE organization_id = ? AND last_checkin >= ?", [$userOrgId, $twoHoursAgo])['c'];
+        $stats['stations_outdated'] = (int)Database::fetchOne("SELECT COUNT(*) as c FROM stations s JOIN organizations o ON o.id = s.organization_id WHERE s.organization_id = ? AND s.configuration_serial < o.serial_config", [$userOrgId])['c'];
+        $stats['recent_stations'] = Database::fetchAll("SELECT hostname, ip_address, last_checkin, CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status FROM stations s JOIN organizations o ON o.id = s.organization_id WHERE s.organization_id = ? ORDER BY last_checkin DESC LIMIT 10", [$userOrgId]);
     } else {
-        $stats['stations_online'] = (int)Database::fetchOne(
-            "SELECT COUNT(*) as c FROM stations WHERE last_checkin >= ?",
-            [$twoHoursAgo]
-        )['c'];
-        $stats['stations_outdated'] = (int)Database::fetchOne(
-            "SELECT COUNT(*) as c FROM stations s
-             JOIN organizations o ON o.id = s.organization_id
-             WHERE s.configuration_serial < o.serial_config"
-        )['c'];
-        $stats['recent_stations'] = Database::fetchAll(
-            "SELECT hostname, ip_address, last_checkin, s.organization_id,
-                    CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status,
-                    o.acronym as org_acronym
-             FROM stations s
-             JOIN organizations o ON o.id = s.organization_id
-             ORDER BY last_checkin DESC LIMIT 10"
-        );
+        $stats['stations_online'] = (int)Database::fetchOne("SELECT COUNT(*) as c FROM stations WHERE last_checkin >= ?", [$twoHoursAgo])['c'];
+        $stats['stations_outdated'] = (int)Database::fetchOne("SELECT COUNT(*) as c FROM stations s JOIN organizations o ON o.id = s.organization_id WHERE s.configuration_serial < o.serial_config")['c'];
+        $stats['recent_stations'] = Database::fetchAll("SELECT hostname, ip_address, last_checkin, s.organization_id, CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status, o.acronym as org_acronym FROM stations s JOIN organizations o ON o.id = s.organization_id ORDER BY last_checkin DESC LIMIT 10");
     }
 
     jsonSuccess($stats);
@@ -188,11 +152,8 @@ function handleCreateOrganization($input) {
 
     $ouPadrao = $domain ? 'OU=Estacoes,' . implode(',', array_map(fn($p) => "DC=$p", explode('.', $domain))) : '';
     $dynamicValues = [
-        'DOMINIO' => $domain,
-        'DOMINIO_NETBIOS' => $acronym,
-        'OM_ACRONYM' => $acronym,
-        'OM_NAME' => $name,
-        'DISPLAY_NAME' => $name,  // Fix: Use organization name, not inherited value
+        'DOMINIO' => $domain, 'DOMINIO_NETBIOS' => $acronym, 'OM_ACRONYM' => $acronym, 'OM_NAME' => $name,
+        'DISPLAY_NAME' => $name,
         'BASE_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
         'WALLPAPER_URL' => $domain ? "https://softwarelivre.{$domain}/wallpapers/default.jpg" : '',
         'LOGO_URL' => $domain ? "https://softwarelivre.{$domain}/logos/default.png" : '',
@@ -244,8 +205,6 @@ function handleUpdateVariables($input) {
     }
     jsonSuccess(null, 'Variaveis salvas');
 }
-
-// ============ SCRIPT HANDLERS ============
 
 function handleGetScripts() {
     $userOrgId = getUserOrgId();
@@ -325,8 +284,6 @@ function handleUploadScript() {
     jsonSuccess(['id' => Database::lastInsertId(), 'filename' => $filename], 'Script enviado');
 }
 
-// ============ BUNDLE HANDLERS ============
-
 function handleGenerateBundle($input) {
     $orgId = (int)($input['organization_id'] ?? 0);
     if (!$orgId) jsonError('Organization ID required');
@@ -347,7 +304,6 @@ function handleGenerateBundle($input) {
 
     $scriptIds = [];
     foreach ($scripts as $s) {
-        // FIX: Apply placeholder substitution
         $scriptContent = substituir_placeholders($s['content'], $orgId);
         $bundle .= "# --- {$s['name']} ({$s['filename']}) ---\n{$scriptContent}\n\n";
         $scriptIds[] = $s['id'];
@@ -373,8 +329,6 @@ function handleDownloadBundle($id) {
     exit;
 }
 
-// ============ IMAGE HANDLERS ============
-
 function handleUploadWallpaper() {
     $orgId = (int)($_POST['organization_id'] ?? $_GET['org_id'] ?? 0);
     if (!$orgId) jsonError('Organization ID required', 400);
@@ -386,9 +340,7 @@ function handleUploadWallpaper() {
 
     $file = $_FILES['wallpaper'];
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    if (!in_array($file['type'], $allowedTypes)) jsonError('Tipo invalido. Use JPG, PNG, GIF, WebP ou SVG', 400);
-
-    // FIX: Increased limit to 10MB
+    if (!in_array($file['type'], $allowedTypes)) jsonError('Tipo invalido', 400);
     if ($file['size'] > 10 * 1024 * 1024) jsonError('Arquivo muito grande (max 10MB)', 400);
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -398,13 +350,9 @@ function handleUploadWallpaper() {
 
     if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) jsonError('Erro ao salvar', 500);
 
-    // Generate thumbnail for gallery
     $thumbDir = $uploadDir . 'thumbs/';
     if (!is_dir($thumbDir)) mkdir($thumbDir, 0755, true);
-    $thumbPath = $thumbDir . $filename;
-    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-        generateThumbnail($uploadDir . $filename, $thumbPath, 100, 70);
-    }
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) generateThumbnail($uploadDir . $filename, $thumbDir . $filename, 100, 70);
 
     $wallpaperUrl = '/assets/wallpapers/' . $filename;
     Database::execute("UPDATE organization_variables ov SET value = ? FROM variable_definitions vd WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = 'WALLPAPER_URL'", [$wallpaperUrl, $orgId]);
@@ -423,8 +371,6 @@ function handleUploadLogo() {
     $file = $_FILES['logo'];
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!in_array($file['type'], $allowedTypes)) jsonError('Tipo invalido', 400);
-
-    // FIX: Increased limit to 10MB
     if ($file['size'] > 10 * 1024 * 1024) jsonError('Arquivo muito grande (max 10MB)', 400);
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -443,7 +389,6 @@ function generateThumbnail($srcPath, $dstPath, $width, $height) {
     try {
         $info = getimagesize($srcPath);
         if (!$info) return false;
-
         $type = $info[2];
         $src = match($type) {
             IMAGETYPE_JPEG => imagecreatefromjpeg($srcPath),
@@ -453,10 +398,8 @@ function generateThumbnail($srcPath, $dstPath, $width, $height) {
             default => false
         };
         if (!$src) return false;
-
         $thumb = imagecreatetruecolor($width, $height);
         imagecopyresampled($thumb, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
-
         match($type) {
             IMAGETYPE_JPEG => imagejpeg($thumb, $dstPath, 85),
             IMAGETYPE_PNG => imagepng($thumb, $dstPath, 8),
@@ -464,13 +407,10 @@ function generateThumbnail($srcPath, $dstPath, $width, $height) {
             IMAGETYPE_WEBP => imagewebp($thumb, $dstPath, 85),
             default => false
         };
-
         imagedestroy($src);
         imagedestroy($thumb);
         return true;
-    } catch (Exception $e) {
-        return false;
-    }
+    } catch (Exception $e) { return false; }
 }
 
 function handleGetWallpapers() {
@@ -484,12 +424,7 @@ function handleGetWallpapers() {
         foreach (scandir($uploadDir) as $file) {
             if ($file === '.' || $file === '..' || is_dir($uploadDir . $file)) continue;
             if (preg_match('/^wallpaper_org' . $orgId . '_/', $file) || preg_match('/^default\./', $file)) {
-                $images[] = [
-                    'filename' => $file,
-                    'url' => '/assets/wallpapers/' . $file,
-                    'thumbnail' => file_exists($thumbDir . $file) ? '/assets/wallpapers/thumbs/' . $file : '/assets/wallpapers/' . $file,
-                    'timestamp' => filemtime($uploadDir . $file)
-                ];
+                $images[] = ['filename' => $file, 'url' => '/assets/wallpapers/' . $file, 'thumbnail' => file_exists($thumbDir . $file) ? '/assets/wallpapers/thumbs/' . $file : '/assets/wallpapers/' . $file, 'timestamp' => filemtime($uploadDir . $file)];
             }
         }
     }
@@ -514,8 +449,6 @@ function handleGetLogos() {
     usort($images, fn($a, $b) => $b['timestamp'] - $a['timestamp']);
     jsonSuccess(['images' => $images]);
 }
-
-// ============ USER HANDLERS ============
 
 function handleGetUsers() {
     $users = Database::fetchAll("SELECT u.id, u.username, u.full_name, u.email, u.role, u.is_active, u.organization_id, o.acronym as org_acronym FROM users u LEFT JOIN organizations o ON o.id = u.organization_id ORDER BY u.username");

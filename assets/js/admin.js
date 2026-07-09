@@ -13,7 +13,6 @@ const Toast = { show: (msg, type = 'success') => { const div = document.createEl
 const categoryLabels = {'dominio':'Dominio','rede':'Rede','proxy':'Proxy','inventario':'Inventario','navegador':'Navegador','seguranca':'Seguranca','branding':'Identidade','general':'Geral','custom':'Custom','arquivos':'Arquivos','acesso_remoto':'Acesso Remoto','impressoras':'Impressoras','certificados':'Certificados','repositorios':'Repositorios'};
 const categoryOrder = ['dominio','rede','proxy','repositorios','navegador','branding','arquivos','impressoras','inventario','acesso_remoto','certificados','seguranca','general','custom'];
 
-// Variable type configurations for select/dropdown fields
 const variableOptions = {
     'PROXY_MODE': ['NONE', 'MANUAL', 'PAC'],
     'REPOSITORY_MODE': ['PUBLIC', 'MIRROR', 'HYBRID', 'CUSTOM'],
@@ -71,7 +70,6 @@ async function loadDashboard() {
         document.getElementById('recent-orgs').innerHTML = organizations.map(o => `<div class="flex items-center justify-between py-2 border-b border-slate-700"><div class="flex items-center gap-2"><span class="font-semibold text-blue-400">${Utils.escapeHtml(o.acronym)}</span><span class="text-slate-400 text-sm">${Utils.escapeHtml(o.name)}</span></div><button onclick="selectOrganization(${o.id})" class="text-blue-400 hover:text-blue-300 text-sm">Ver</button></div>`).join('');
     }
 
-    // Render recent stations table
     const stationsEl = document.getElementById('recent-stations');
     if (stationsEl && stats.recent_stations?.length) {
         stationsEl.innerHTML = `<table class="w-full text-sm"><thead class="bg-slate-900"><tr><th class="px-4 py-2 text-left text-slate-400">Hostname</th><th class="px-4 py-2 text-left text-slate-400">IP</th><th class="px-4 py-2 text-left text-slate-400">Check-in</th><th class="px-4 py-2 text-left text-slate-400">OM</th><th class="px-4 py-2 text-left text-slate-400">Status</th></tr></thead><tbody>${stats.recent_stations.map(s => `<tr class="border-b border-slate-700"><td class="px-4 py-2 text-white">${Utils.escapeHtml(s.hostname || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.ip_address || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.formatDate(s.last_checkin)}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.org_acronym || '-')}</td><td class="px-4 py-2"><span class="px-2 py-0.5 text-xs rounded ${s.status === 'Atualizado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${s.status}</span></td></tr>`).join('')}</tbody></table>`;
@@ -163,7 +161,6 @@ function renderTypedInput(v) {
     const ph = v.default_value || '';
     const varId = v.id;
 
-    // Check for predefined options
     const predefinedOptions = variableOptions[v.name];
     if (predefinedOptions === 'boolean' || v.type === 'boolean') {
         const checked = val === 'true' || val === '1' || val === true;
@@ -176,7 +173,6 @@ function renderTypedInput(v) {
         return `<select data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${optionsHtml}${hasCustomVal ? `<option value="${Utils.escapeHtml(val)}" selected>${Utils.escapeHtml(val)}</option>` : ''}<option value="">Outro...</option></select>`;
     }
 
-    // Check DB-level options
     if (v.options && typeof v.options === 'string') {
         try {
             const opts = JSON.parse(v.options);
@@ -186,7 +182,6 @@ function renderTypedInput(v) {
         } catch(e) {}
     }
 
-    // Type-based rendering
     if (v.type === 'password') return `<input type="password" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="******">`;
     if (v.type === 'json') return `<textarea data-var-id="${varId}" rows="3" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm font-mono">${Utils.escapeHtml(val)}</textarea>`;
     if (v.type === 'array') return `<textarea data-var-id="${varId}" rows="2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${Utils.escapeHtml(val)}</textarea>`;
@@ -241,11 +236,8 @@ async function saveVariables() {
     const updates = {};
     document.querySelectorAll('[data-var-id]').forEach(el => {
         let value;
-        if (el.type === 'checkbox') {
-            value = el.checked ? 'true' : 'false';
-        } else {
-            value = el.value;
-        }
+        if (el.type === 'checkbox') value = el.checked ? 'true' : 'false';
+        else value = el.value;
         updates[el.dataset.varId] = value;
     });
     const res = await API.post('variables-update', {organization_id: currentOrgId, variables: updates});
@@ -266,7 +258,6 @@ window.openModal = openModal;
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 window.closeModal = closeModal;
 
-// Scripts
 async function loadAllScripts() {
     const res = await API.get('scripts');
     if (!res.success) return;
@@ -322,7 +313,6 @@ async function createScript(e) {
 }
 window.createScript = createScript;
 
-// Bundle
 async function generateBundle() {
     if (!currentOrgId) return;
     const res = await API.post('bundle', {organization_id: currentOrgId});
@@ -331,7 +321,6 @@ async function generateBundle() {
 }
 window.generateBundle = generateBundle;
 
-// Users
 async function loadUsers() {
     const res = await API.get('users');
     if (!res.success) return;
@@ -359,14 +348,12 @@ async function deleteUser(id) {
 }
 window.deleteUser = deleteUser;
 
-// Audit
 async function loadAuditEvents() {
     const res = await API.get('audit', {limit: 100});
     if (!res.success) return;
     document.getElementById('audit-tbody').innerHTML = res.data.length ? res.data.map(e => `<tr><td class="px-6 py-4 text-sm text-slate-300">${Utils.formatDate(e.created_at)}</td><td class="px-6 py-4 text-sm text-white">${Utils.escapeHtml(e.full_name||e.username||'-')}</td><td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded bg-blue-500/20 text-blue-400">${Utils.escapeHtml(e.action)}</span></td><td class="px-6 py-4 text-sm text-slate-300">${Utils.escapeHtml(e.entity)}</td><td class="px-6 py-4 text-sm text-slate-300">${Utils.escapeHtml(e.org_acronym||'-')}</td><td class="px-6 py-4 text-sm text-slate-400">${e.details?Utils.escapeHtml(typeof e.details==='string'?e.details:JSON.stringify(e.details)):'-'}</td></tr>`).join('') : '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400">Nenhum evento</td></tr>';
 }
 
-// Event listeners
 function setupEventListeners() {
     document.getElementById('btn-new-org')?.addEventListener('click', () => openModal('modal-new-org'));
     document.getElementById('new-org-form')?.addEventListener('submit', e => { e.preventDefault(); (async () => {
