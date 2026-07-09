@@ -3,526 +3,480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - SeederLinux Lite</title>
+    <title>SeederLinux Lite - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
-    <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <img src="assets/images/seederlinux-logo.png" alt="SeederLinux" onerror="this.src='assets/images/seederlinux-logo.svg'">
-                <div>
-                    <div class="font-bold text-white">SeederLinux</div>
-                    <div class="text-xs text-slate-400">Lite Admin</div>
-                </div>
+<div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/assets/images/logos/seederlinux-logo.svg" alt="SeederLinux" onerror="this.style.display='none'">
+            <div class="sidebar-logo-text">
+                <div class="brand">SeederLinux Lite</div>
+                <div class="sub">Sistema de Configuracao</div>
             </div>
-
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-title">Menu</div>
-                    <button class="nav-item active" data-view="dashboard" onclick="showView('dashboard')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        Dashboard
-                    </button>
-                    <button class="nav-item" data-view="organizations" onclick="showView('organizations'); document.getElementById('view-dashboard').classList.remove('hidden'); document.getElementById('view-om-detail').classList.add('hidden');">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        Organizacoes
-                    </button>
-                    <button id="nav-scripts-core" class="nav-item" data-view="scripts-core" onclick="showView('scripts-core')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-                        Scripts Core
-                    </button>
-                    <button id="nav-users" class="nav-item" data-view="users" onclick="showView('users')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        Usuarios
-                    </button>
-                    <button class="nav-item" data-view="stations" onclick="showView('stations')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        Estacoes
-                    </button>
-                    <button id="nav-audit" class="nav-item" data-view="audit" onclick="showView('audit')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Auditoria
-                    </button>
-                </div>
-
-                <div class="nav-section" id="orgs-section">
-                    <div class="nav-section-title">Organizacoes</div>
-                    <button id="btn-new-org" class="nav-item" onclick="openModal('modal-new-org')">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Nova OM
-                    </button>
-                    <nav id="om-list"></nav>
-                </div>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar"><span id="user-initial">A</span></div>
-                    <div class="user-details">
-                        <div class="user-name" id="user-name">Admin</div>
-                        <div class="user-role" id="user-role">Admin GAP</div>
-                    </div>
-                    <button id="btn-logout" class="btn btn-sm btn-secondary" title="Sair">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    </button>
-                </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <button class="nav-item active" onclick="showView('dashboard')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    Dashboard
+                </button>
+                <button class="nav-item" onclick="showView('stations')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Estacoes
+                </button>
             </div>
-        </aside>
+            <div class="nav-section">
+                <div class="nav-section-title">Organizacoes</div>
+                <div id="om-list" class="flex flex-col gap-1">
+                    <p class="text-xs text-muted p-3 text-center">Carregando...</p>
+                </div>
+                <button id="btn-new-org" class="nav-item mt-2 hidden">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    Nova OM
+                </button>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Sistema</div>
+                <button id="nav-scripts-core" class="nav-item hidden" onclick="showView('scripts-core')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    Scripts Core
+                </button>
+                <button id="nav-users" class="nav-item hidden" onclick="showView('users')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 100 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Usuarios
+                </button>
+                <button id="nav-audit" class="nav-item hidden" onclick="showView('audit')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    Auditoria
+                </button>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div id="user-initial" class="user-avatar">U</div>
+                <div class="user-details">
+                    <div id="user-name" class="user-name">Usuario</div>
+                    <div id="user-role-badge" class="user-role-badge">-</div>
+                </div>
+                <button id="btn-logout" class="btn btn-icon btn-secondary" title="Sair">
+                    <svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="page-header">
-                <h1 class="page-title" id="page-title">Dashboard</h1>
-                <p class="page-subtitle" id="page-subtitle">Visao geral do sistema</p>
-            </header>
+    <!-- Main -->
+    <main class="main">
+        <header class="page-header">
+            <h1 id="page-title">Dashboard</h1>
+            <p id="page-subtitle">Visao geral do sistema</p>
+        </header>
 
-            <div class="page-content">
-                <!-- Dashboard View -->
-                <div id="view-dashboard">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon blue"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
-                            <div class="stat-value" id="dash-orgs">0</div>
-                            <div class="stat-label">Organizacoes</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon green"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-                            <div class="stat-value" id="dash-scripts">0</div>
-                            <div class="stat-label">Scripts</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon amber"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-                            <div class="stat-value" id="dash-vars">0</div>
-                            <div class="stat-label">Variaveis</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon red"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div>
-                            <div class="stat-value" id="dash-bundles">0</div>
-                            <div class="stat-label">Bundles/Mes</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon cyan"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>
-                            <div class="stat-value" id="dash-stations-online">0</div>
-                            <div class="stat-label">Estacoes Online</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon amber"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
-                            <div class="stat-value" id="dash-stations-outdated">0</div>
-                            <div class="stat-label">Desatualizadas</div>
-                        </div>
+        <div class="page-body">
+            <!-- Dashboard View -->
+            <div id="view-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></div>
+                        <div id="dash-orgs" class="stat-value">0</div>
+                        <div class="stat-label">Organizacoes</div>
                     </div>
-
-                    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
-                        <div class="card">
-                            <div class="card-header"><h3 class="card-title">Ultimas Estacoes</h3></div>
-                            <div class="card-body" id="recent-stations"></div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><h3 class="card-title">Organizacoes Recentes</h3></div>
-                            <div class="card-body" id="recent-orgs"></div>
-                        </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg></div>
+                        <div id="dash-scripts" class="stat-value">0</div>
+                        <div class="stat-label">Scripts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon amber"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg></div>
+                        <div id="dash-vars" class="stat-value">0</div>
+                        <div class="stat-label">Variaveis</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon cyan"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
+                        <div id="dash-bundles" class="stat-value">0</div>
+                        <div class="stat-label">Bundles (mes)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"/></svg></div>
+                        <div id="dash-online" class="stat-value">0</div>
+                        <div class="stat-label">Online</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+                        <div id="dash-outdated" class="stat-value">0</div>
+                        <div class="stat-label">Desatualizadas</div>
                     </div>
                 </div>
 
-                <!-- Organization Detail View -->
-                <div id="view-om-detail" class="hidden">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-16 h-16 rounded-xl gradient-badge text-2xl" id="om-badge">OM</div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <h2 class="text-xl font-bold" id="om-display-name">Nome</h2>
-                                <span class="text-slate-400" id="om-display-acronym">SIGLA</span>
-                                <button id="btn-edit-org" class="btn btn-sm btn-secondary" title="Editar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.232 3.232m-2.162-2.162l4.399 4.4M4.5 19.5l3.5-3.5L4.5 19.5z"/></svg>
-                                </button>
-                            </div>
-                            <p class="text-slate-400" id="om-display-domain">dominio</p>
-                        </div>
-                        <button class="btn btn-danger btn-sm" onclick="deleteOrganization(currentOrgId)" id="btn-delete-org">Excluir</button>
-                    </div>
-
-                    <div class="tabs">
-                        <button class="tab-btn active" data-tab="variables" onclick="switchTab('variables')">Variaveis</button>
-                        <button class="tab-btn" data-tab="scripts" onclick="switchTab('scripts')">Scripts</button>
-                        <button class="tab-btn" data-tab="bundle" onclick="switchTab('bundle')">Gerar Bundle</button>
-                    </div>
-
-                    <!-- Variables Tab -->
-                    <div id="tab-variables" class="tab-content">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Variaveis de Configuracao</h3>
-                                <div class="flex items-center gap-2">
-                                    <input type="text" id="var-search" placeholder="Buscar..." class="form-input" style="width: 200px;">
-                                    <button id="btn-save-vars" class="btn btn-success btn-sm">Salvar</button>
-                                </div>
-                            </div>
-                            <div class="card-body" id="vars-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Scripts Tab -->
-                    <div id="tab-scripts" class="tab-content hidden">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title">Scripts Disponiveis</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="flex gap-2 mb-4">
-                                    <button class="btn btn-sm btn-primary script-tab-btn active" data-script-tab="Core" onclick="switchScriptTab('Core')">Core</button>
-                                    <button class="btn btn-sm btn-secondary script-tab-btn" data-script-tab="Custom" onclick="switchScriptTab('Custom')">Custom</button>
-                                </div>
-                                <div id="org-scripts-list"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bundle Tab -->
-                    <div id="tab-bundle" class="tab-content hidden">
-                        <div class="card">
-                            <div class="card-header"><h3 class="card-title">Gerar Bundle</h3></div>
-                            <div class="card-body">
-                                <p class="text-slate-400 mb-4">Selecione os scripts e gere o bundle para deploy.</p>
-                                <button id="btn-generate-bundle" class="btn btn-success btn-lg">Gerar Bundle</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Users View -->
-                <div id="view-users" class="hidden">
+                <div class="grid-2">
                     <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Usuarios</h3>
-                            <button id="btn-new-user" class="btn btn-primary btn-sm">+ Novo Usuario</button>
-                        </div>
-                        <div class="card-body table-wrapper">
-                            <table>
-                                <thead><tr>
-                                    <th>Username</th>
-                                    <th>Nome</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>OM</th>
-                                    <th>Status</th>
-                                    <th class="text-right">Acoes</th>
-                                </tr></thead>
-                                <tbody id="users-tbody"></tbody>
-                            </table>
-                        </div>
+                        <div class="card-header"><h3>Estacoes Recentes</h3></div>
+                        <div id="recent-stations" class="card-body"><p class="text-sm text-muted text-center p-3">Carregando...</p></div>
                     </div>
-                </div>
-
-                <!-- Scripts Core View -->
-                <div id="view-scripts-core" class="hidden">
                     <div class="card">
-                        <div class="card-header"><h3 class="card-title">Scripts do Sistema</h3></div>
-                        <div class="card-body" id="scripts-list"></div>
-                    </div>
-                </div>
-
-                <!-- Stations View -->
-                <div id="view-stations" class="hidden">
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Estacoes Registradas</h3></div>
-                        <div class="card-body table-wrapper">
-                            <table>
-                                <thead><tr>
-                                    <th>Hostname</th>
-                                    <th>IP</th>
-                                    <th>MAC</th>
-                                    <th>SO</th>
-                                    <th>Ultimo Check-in</th>
-                                    <th>Status</th>
-                                    <th>OM</th>
-                                </tr></thead>
-                                <tbody id="stations-tbody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Audit View -->
-                <div id="view-audit" class="hidden">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Log de Auditoria</h3>
-                            <div class="flex gap-2">
-                                <input type="date" id="audit-start-date" class="form-input" style="width: 150px;">
-                                <input type="date" id="audit-end-date" class="form-input" style="width: 150px;">
-                                <button onclick="loadAuditEvents()" class="btn btn-secondary btn-sm">Filtrar</button>
-                            </div>
-                        </div>
-                        <div class="card-body table-wrapper">
-                            <table>
-                                <thead><tr>
-                                    <th>Data</th>
-                                    <th>Usuario</th>
-                                    <th>Acao</th>
-                                    <th>Entidade</th>
-                                    <th>OM</th>
-                                    <th>Detalhes</th>
-                                </tr></thead>
-                                <tbody id="audit-tbody"></tbody>
-                            </table>
-                        </div>
+                        <div class="card-header"><h3>Organizacoes Recentes</h3></div>
+                        <div id="recent-orgs" class="card-body"><p class="text-sm text-muted text-center p-3">Carregando...</p></div>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
 
-    <!-- Modal: New Organization -->
-    <div id="modal-new-org" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-new-org')"></div>
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h3 class="modal-title">Nova Organizacao</h3>
-                <button class="modal-close" onclick="closeModal('modal-new-org')">&times;</button>
-            </div>
-            <form id="new-org-form" onsubmit="createOrganization(event)">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Nome *</label>
-                        <input type="text" id="new-org-name" class="form-input" required>
-                    </div>
-                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
-                        <div class="form-group">
-                            <label class="form-label">Sigla *</label>
-                            <input type="text" id="new-org-acronym" class="form-input" required style="text-transform: uppercase;" maxlength="20">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Dominio</label>
-                            <input type="text" id="new-org-domain" class="form-input" placeholder="exemplo.com.br">
+            <!-- OM Detail View -->
+            <div id="view-om-detail" class="hidden">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="om-badge" class="om-badge">OM</div>
+                    <div class="flex-1">
+                        <h2 id="om-name" class="text-lg font-semibold">-</h2>
+                        <div class="flex items-center gap-2 text-sm text-muted">
+                            <span id="om-acronym">-</span>
+                            <span>|</span>
+                            <span id="om-domain">-</span>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Descricao</label>
-                        <textarea id="new-org-description" class="form-input form-textarea" rows="2"></textarea>
-                    </div>
-                    <div id="network-config" class="border border-slate-700 rounded-lg p-4 mt-4">
-                        <h4 class="font-semibold mb-3">Configuracao de Rede</h4>
-                        <div class="grid gap-4" style="grid-template-columns: 1fr 1fr 1fr;">
-                            <div class="form-group">
-                                <label class="form-label">DC IP</label>
-                                <input type="text" id="new-org-dc-ip" class="form-input font-mono">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">DNS Primario</label>
-                                <input type="text" id="new-org-dns-primario" class="form-input font-mono">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">DNS Secundario</label>
-                                <input type="text" id="new-org-dns-secundario" class="form-input font-mono">
-                            </div>
-                        </div>
-                    </div>
+                    <button id="btn-edit-org" class="btn btn-secondary btn-sm">Editar OM</button>
+                    <button class="btn btn-secondary btn-sm hidden" onclick="showView('dashboard')">Fechar</button>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-org')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Criar</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Modal: Edit Organization -->
-    <div id="modal-edit-org" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-edit-org')"></div>
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h3 class="modal-title">Editar Organizacao</h3>
-                <button class="modal-close" onclick="closeModal('modal-edit-org')">&times;</button>
-            </div>
-            <form id="edit-org-form" onsubmit="updateOrganization(event)">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Nome</label>
-                        <input type="text" id="edit-org-name" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Sigla</label>
-                        <input type="text" id="edit-org-acronym" class="form-input" readonly style="opacity: 0.6;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Dominio</label>
-                        <input type="text" id="edit-org-domain" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Descricao</label>
-                        <textarea id="edit-org-description" class="form-input form-textarea" rows="2"></textarea>
-                    </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="variables" onclick="switchTab('variables')">Variaveis</button>
+                    <button class="tab-btn" data-tab="scripts" onclick="switchTab('scripts')">Scripts</button>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-org')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Modal: User -->
-    <div id="modal-user" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-user')"></div>
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modal-user-title">Novo Usuario</h3>
-                <button class="modal-close" onclick="closeModal('modal-user')">&times;</button>
-            </div>
-            <form id="user-form" onsubmit="saveUser(event)">
-                <div class="modal-body">
-                    <input type="hidden" id="user-edit-id">
-                    <div class="form-group">
-                        <label class="form-label">Username *</label>
-                        <input type="text" id="user-username" class="form-input" required>
+                <div class="tab-pane active" data-pane="variables">
+                    <div class="flex items-center justify-between mb-3">
+                        <input type="text" id="var-search" class="form-input" placeholder="Buscar variavel..." style="max-width:300px">
+                        <button id="btn-save-vars" class="btn btn-success">Salvar Variaveis</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Nome Completo</label>
-                        <input type="text" id="user-full-name" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" id="user-email" class="form-input">
-                    </div>
-                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
-                        <div class="form-group">
-                            <label class="form-label">Senha</label>
-                            <input type="password" id="user-password" class="form-input" placeholder="Minimo 6 caracteres">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Confirmar Senha</label>
-                            <input type="password" id="user-confirm-password" class="form-input" placeholder="Repita a senha">
-                        </div>
-                    </div>
-                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
-                        <div class="form-group">
-                            <label class="form-label">Role</label>
-                            <select id="user-role" class="form-select">
-                                <option value="admin_gap">Admin GAP</option>
-                                <option value="operador_om">Operador OM</option>
-                                <option value="auditor">Auditor</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Organizacao</label>
-                            <select id="user-organization" class="form-select">
-                                <option value="">Nenhuma</option>
-                            </select>
-                        </div>
-                    </div>
+                    <div id="vars-container"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-user')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Modal: View Script -->
-    <div id="modal-view-script" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-view-script')"></div>
-        <div class="modal-dialog" style="max-width: 48rem;">
-            <div class="modal-header">
-                <h3 class="modal-title" id="script-view-name">Script</h3>
-                <button class="modal-close" onclick="closeModal('modal-view-script')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="flex gap-4 mb-4">
-                    <div><span class="text-slate-400 text-sm">Arquivo:</span> <span id="script-view-filename" class="text-sm"></span></div>
-                    <div><span class="text-slate-400 text-sm">Core:</span> <span id="script-view-core" class="text-sm"></span></div>
+                <div class="tab-pane" data-pane="scripts">
+                    <div class="flex items-center gap-2 mb-2">
+                        <button class="script-tab-btn btn btn-sm btn-secondary active" data-st="Core" onclick="switchScriptTab('Core')">Core</button>
+                        <button class="script-tab-btn btn btn-sm btn-secondary" data-st="Custom" onclick="switchScriptTab('Custom')">Custom</button>
+                    </div>
+                    <div id="org-scripts-list"></div>
+                    <div class="mt-3">
+                        <button id="btn-generate-bundle" class="btn btn-primary">Gerar Bundle</button>
+                    </div>
                 </div>
-                <textarea id="script-view-content" class="form-input font-mono" rows="15" readonly style="background: #0a0f1a;"></textarea>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary modal-close" onclick="closeModal('modal-view-script')">Fechar</button>
-                <button id="script-edit-btn" class="btn btn-warning hidden" onclick="editScript()">Editar</button>
-                <button id="script-delete-btn" class="btn btn-danger hidden" onclick="deleteScript()">Excluir</button>
+
+            <!-- Users View -->
+            <div id="view-users" class="hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Usuarios</h3>
+                        <button id="btn-new-user" class="btn btn-sm btn-primary hidden">+ Novo Usuario</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Usuario</th><th>Nome</th><th>Email</th><th>Role</th><th>OM</th><th>Status</th><th>Acoes</th></tr></thead>
+                            <tbody id="users-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scripts Core View -->
+            <div id="view-scripts-core" class="hidden">
+                <div class="card">
+                    <div class="card-header"><h3>Scripts do Sistema</h3></div>
+                    <div class="card-body" id="all-scripts-list"></div>
+                </div>
+            </div>
+
+            <!-- Stations View -->
+            <div id="view-stations" class="hidden">
+                <div class="card">
+                    <div class="card-header"><h3>Estacoes Registradas</h3></div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Hostname</th><th>IP</th><th>MAC</th><th>SO</th><th>Check-in</th><th>Status</th><th>OM</th></tr></thead>
+                            <tbody id="stations-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit View -->
+            <div id="view-audit" class="hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Log de Auditoria</h3>
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="audit-start" class="form-input" style="width:auto">
+                            <input type="date" id="audit-end" class="form-input" style="width:auto">
+                            <button class="btn btn-sm btn-secondary" onclick="loadAuditEvents()">Filtrar</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data</th><th>Usuario</th><th>Acao</th><th>Entidade</th><th>OM</th><th>Detalhes</th></tr></thead>
+                            <tbody id="audit-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
+</div>
 
-    <!-- Modal: Edit Script -->
-    <div id="modal-edit-script" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-edit-script')"></div>
-        <div class="modal-dialog" style="max-width: 48rem;">
-            <div class="modal-header">
-                <h3 class="modal-title">Editar Script</h3>
-                <button class="modal-close" onclick="closeModal('modal-edit-script')">&times;</button>
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Modals - ALL use style="display:none" to prevent auto-opening -->
+
+<!-- Modal: New Organization -->
+<div id="modal-new-org" class="modal-overlay" style="display:none">
+    <div class="modal-box md">
+        <div class="modal-header">
+            <div class="modal-title">Nova Organizacao</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-new-org')">&times;</button>
+        </div>
+        <form id="new-org-form" class="modal-body">
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nome <span class="req">*</span></label>
+                    <input type="text" id="new-org-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sigla <span class="req">*</span></label>
+                    <input type="text" id="new-org-acronym" class="form-input" required maxlength="10">
+                </div>
             </div>
-            <form id="edit-script-form" onsubmit="updateScript(event)">
-                <div class="modal-body">
-                    <input type="hidden" id="edit-script-id">
-                    <div class="form-group">
-                        <label class="form-label">Nome *</label>
-                        <input type="text" id="edit-script-name" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Descricao</label>
-                        <input type="text" id="edit-script-description" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Conteudo</label>
-                        <textarea id="edit-script-content" class="form-input form-textarea font-mono" rows="12" style="background: #0a0f1a;"></textarea>
-                    </div>
+            <div class="form-group">
+                <label class="form-label">Dominio</label>
+                <input type="text" id="new-org-domain" class="form-input" placeholder="exemplo.gov.br">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descricao</label>
+                <textarea id="new-org-desc" class="form-textarea" rows="2"></textarea>
+            </div>
+            <div class="form-grid-3">
+                <div class="form-group">
+                    <label class="form-label">IP Controlador Dominio</label>
+                    <input type="text" id="new-org-dc" class="form-input">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-script')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                <div class="form-group">
+                    <label class="form-label">DNS Primario</label>
+                    <input type="text" id="new-org-dns1" class="form-input">
                 </div>
-            </form>
+                <div class="form-group">
+                    <label class="form-label">DNS Secundario</label>
+                    <input type="text" id="new-org-dns2" class="form-input">
+                </div>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-org')">Cancelar</button>
+            <button type="submit" form="new-org-form" class="btn btn-primary">Criar</button>
         </div>
     </div>
+</div>
 
-    <!-- Modal: New Script -->
-    <div id="modal-new-script" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('modal-new-script')"></div>
-        <div class="modal-dialog" style="max-width: 48rem;">
-            <div class="modal-header">
-                <h3 class="modal-title">Novo Script</h3>
-                <button class="modal-close" onclick="closeModal('modal-new-script')">&times;</button>
+<!-- Modal: Edit Organization -->
+<div id="modal-edit-org" class="modal-overlay" style="display:none">
+    <div class="modal-box md">
+        <div class="modal-header">
+            <div class="modal-title">Editar Organizacao</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-edit-org')">&times;</button>
+        </div>
+        <form id="edit-org-form" class="modal-body">
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nome</label>
+                    <input type="text" id="edit-org-name" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sigla</label>
+                    <input type="text" id="edit-org-acronym" class="form-input" disabled>
+                </div>
             </div>
-            <form id="new-script-form" onsubmit="createScript(event)">
-                <div class="modal-body">
-                    <div class="grid gap-4" style="grid-template-columns: 1fr 1fr;">
-                        <div class="form-group">
-                            <label class="form-label">Nome *</label>
-                            <input type="text" id="new-script-name" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Arquivo *</label>
-                            <input type="text" id="new-script-filename" class="form-input font-mono" required placeholder="script.sh">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Descricao</label>
-                        <input type="text" id="new-script-description" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Conteudo</label>
-                        <textarea id="new-script-content" class="form-input form-textarea font-mono" rows="10" style="background: #0a0f1a;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-script')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Criar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label class="form-label">Dominio</label>
+                <input type="text" id="edit-org-domain" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descricao</label>
+                <textarea id="edit-org-desc" class="form-textarea" rows="2"></textarea>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" onclick="deleteOrganization(currentOrgId)">Excluir</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-org')">Cancelar</button>
+            <button type="submit" form="edit-org-form" class="btn btn-primary">Salvar</button>
         </div>
     </div>
+</div>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
+<!-- Modal: User -->
+<div id="modal-user" class="modal-overlay" style="display:none">
+    <div class="modal-box md">
+        <div class="modal-header">
+            <div id="modal-user-title" class="modal-title">Novo Usuario</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-user')">&times;</button>
+        </div>
+        <form id="user-form" class="modal-body">
+            <input type="hidden" id="u-edit-id">
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Usuario <span class="req">*</span></label>
+                    <input type="text" id="u-username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" id="u-fullname" class="form-input">
+                </div>
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="u-email" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role <span class="req">*</span></label>
+                    <select id="u-role" class="form-select" required>
+                        <option value="admin_gap">Admin GAP</option>
+                        <option value="operador_om">Operador OM</option>
+                        <option value="auditor">Auditor</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Organizacao</label>
+                <select id="u-org-select" class="form-select"></select>
+            </div>
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Senha</label>
+                    <input type="password" id="u-password" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirmar Senha</label>
+                    <input type="password" id="u-confirm-pw" class="form-input">
+                </div>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-user')">Cancelar</button>
+            <button type="submit" form="user-form" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
 
-    <script src="assets/js/admin.js"></script>
-    <script>
-        // Show network config when domain is filled
-        document.getElementById('new-org-domain')?.addEventListener('input', function() {
-            document.getElementById('network-config').style.display = this.value ? 'block' : 'none';
-        });
-    </script>
+<!-- Modal: View Script -->
+<div id="modal-view-script" class="modal-overlay" style="display:none">
+    <div class="modal-box lg">
+        <div class="modal-header">
+            <div class="modal-title">Script: <span id="sv-name">-</span></div>
+            <button class="modal-close-btn" onclick="closeModal('modal-view-script')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="badge badge-secondary" id="sv-filename">-</span>
+                <span class="badge" id="sv-is-core-badge">Core: <span id="sv-is-core">-</span></span>
+            </div>
+            <textarea id="sv-content" class="form-textarea mono" rows="16" readonly></textarea>
+        </div>
+        <div class="modal-footer">
+            <button id="sv-edit-btn" type="button" class="btn btn-primary hidden">Editar</button>
+            <button id="sv-del-btn" type="button" class="btn btn-danger hidden">Excluir</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-view-script')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Script -->
+<div id="modal-edit-script" class="modal-overlay" style="display:none">
+    <div class="modal-box lg">
+        <div class="modal-header">
+            <div class="modal-title">Editar Script</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-edit-script')">&times;</button>
+        </div>
+        <form id="edit-script-form" class="modal-body">
+            <input type="hidden" id="edit-script-id">
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nome</label>
+                    <input type="text" id="edit-script-name" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Arquivo</label>
+                    <input type="text" id="edit-script-filename" class="form-input" disabled>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descricao</label>
+                <input type="text" id="edit-script-desc" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Conteudo</label>
+                <textarea id="edit-script-content" class="form-textarea mono" rows="16"></textarea>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-script')">Cancelar</button>
+            <button type="submit" form="edit-script-form" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: New Script -->
+<div id="modal-new-script" class="modal-overlay" style="display:none">
+    <div class="modal-box lg">
+        <div class="modal-header">
+            <div class="modal-title">Novo Script Custom</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-new-script')">&times;</button>
+        </div>
+        <form id="new-script-form" class="modal-body">
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nome <span class="req">*</span></label>
+                    <input type="text" id="new-script-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome do Arquivo <span class="req">*</span></label>
+                    <input type="text" id="new-script-filename" class="form-input" required placeholder="script.sh">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descricao</label>
+                <input type="text" id="new-script-desc" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Conteudo <span class="req">*</span></label>
+                <textarea id="new-script-content" class="form-textarea mono" rows="16" required></textarea>
+            </div>
+        </form>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-script')">Cancelar</button>
+            <button type="submit" form="new-script-form" class="btn btn-primary">Criar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Upload Script -->
+<div id="modal-upload-script" class="modal-overlay" style="display:none">
+    <div class="modal-box sm">
+        <div class="modal-header">
+            <div class="modal-title">Upload Script Core</div>
+            <button class="modal-close-btn" onclick="closeModal('modal-upload-script')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="text-sm text-muted mb-3">Funcionalidade de upload em desenvolvimento.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modal-upload-script')">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/admin.js"></script>
 </body>
 </html>
