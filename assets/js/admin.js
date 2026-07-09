@@ -351,7 +351,11 @@ function renderVariables(vars) {
                 <div class="var-row" data-var-name="${Utils.escapeHtml(v.name).toLowerCase()}" data-var-category="${Utils.escapeHtml(v.category || '')}">
                     <label class="block text-sm font-medium text-slate-300 mb-2">
                         ${Utils.escapeHtml(v.name)} ${v.is_required ? '<span class="text-red-400">*</span>' : ''}
-                        ${v.type && v.type !== 'string' ? `<span class="text-slate-600 text-xs ml-1">(${v.type})</span>` : ''}
+                        ${v.type && v.type !== 'string' ? `<span class="text-slate-600 text-xs ml-1"
+        }
+        )
+    }
+}>(${v.type})</span>` : ''}
                     </label>
                     ${renderInput(v)}
                     ${v.description && v.type !== 'array' ? `<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>` : ''}
