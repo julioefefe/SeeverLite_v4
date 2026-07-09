@@ -4,11 +4,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-// Increase upload limits
 ini_set('upload_max_filesize', '10M');
 ini_set('post_max_size', '10M');
 
-// Carregar .env manualmente
 $envFile = __DIR__ . '/../.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);

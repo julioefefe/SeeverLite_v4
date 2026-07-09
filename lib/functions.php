@@ -40,9 +40,6 @@ function getCurrentUser() {
 
 function log_event($msg, $level = 'INFO') { error_log("[$level] $msg"); }
 
-/**
- * Substitui placeholders {{VARIAVEL}} pelos valores reais das variáveis da organização
- */
 function substituir_placeholders($content, $orgId) {
     $vars = Database::fetchAll(
         "SELECT vd.name, ov.value FROM organization_variables ov

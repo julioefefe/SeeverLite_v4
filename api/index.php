@@ -33,7 +33,7 @@ try {
         case 'dashboard': requireAuth(); handleDashboard(); break;
         case 'organizations': requireAuth(); if ($method === 'GET') handleGetOrganizations(); elseif ($method === 'POST') handleCreateOrganization($input); else jsonError('Method not allowed', 405); break;
         case 'organization': requireAuth(); if (!$id) jsonError('ID required', 400); if ($method === 'GET') handleGetOrganization($id); elseif ($method === 'PUT') handleUpdateOrganization($id, $input); elseif ($method === 'DELETE') handleDeleteOrganization($id); else jsonError('Method not allowed', 405); break;
-        case 'variables': requireAuth(); if ($method === 'GET') handleGetVariables($id); elseif ($method === 'POST') handleUpdateVariables($input); else jsonError('Method not allowed', 405); break;
+        case 'variables': requireAuth(); handleGetVariables($id); break;
         case 'variables-update': requireAuth(); if ($method !== 'POST') jsonError('Method not allowed', 405); handleUpdateVariables($input); break;
         case 'scripts': requireAuth(); handleGetScripts(); break;
         case 'script': requireAuth(); if ($method === 'GET' && $id) handleGetScript($id); elseif ($method === 'PUT' && $id) handleUpdateScript($id, $input); elseif ($method === 'DELETE' && $id) handleDeleteScript($id); elseif ($method === 'POST') handleCreateScript($input); else jsonError('Method not allowed', 405); break;
@@ -138,9 +138,6 @@ function handleCreateOrganization($input) {
     $dc_ip = sanitizeInput($input['dc_ip'] ?? '');
     $dns_primario = sanitizeInput($input['dns_primario'] ?? '');
     $dns_secundario = sanitizeInput($input['dns_secundario'] ?? '');
-    $homepage = sanitizeInput($input['homepage'] ?? '');
-    $proxy_http = sanitizeInput($input['proxy_http'] ?? '');
-    $proxy_porta = sanitizeInput($input['proxy_porta'] ?? '');
 
     if ($domain && (empty($dc_ip) || empty($dns_primario))) jsonError('DC_IP e DNS Primario obrigatorios');
     if (Database::fetchOne("SELECT id FROM organizations WHERE acronym = ?", [$acronym])) jsonError('Sigla ja cadastrada');
@@ -152,12 +149,15 @@ function handleCreateOrganization($input) {
 
     $ouPadrao = $domain ? 'OU=Estacoes,' . implode(',', array_map(fn($p) => "DC=$p", explode('.', $domain))) : '';
     $dynamicValues = [
-        'DOMINIO' => $domain, 'DOMINIO_NETBIOS' => $acronym, 'OM_ACRONYM' => $acronym, 'OM_NAME' => $name,
+        'DOMINIO' => $domain,
+        'DOMINIO_NETBIOS' => $acronym,
+        'OM_ACRONYM' => $acronym,
+        'OM_NAME' => $name,
         'DISPLAY_NAME' => $name,
         'BASE_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
-        'WALLPAPER_URL' => $domain ? "https://softwarelivre.{$domain}/wallpapers/default.jpg" : '',
-        'LOGO_URL' => $domain ? "https://softwarelivre.{$domain}/logos/default.png" : '',
-        'HOMEPAGE' => $homepage ?: ($domain ? "www.{$domain}" : ''),
+        'WALLPAPER_URL' => '/assets/wallpapers/default.jpg',
+        'LOGO_URL' => '/assets/logos/default.png',
+        'HOMEPAGE' => $domain ? "www.{$domain}" : '',
         'OCS_SERVER' => $domain ? "http://ocs.{$domain}/ocsinventory" : '',
         'OCS_TAG' => $acronym . '-ESTACOES',
         'PROXY_URL' => $domain ? "http://proxy.{$domain}:8080" : '',
@@ -168,8 +168,6 @@ function handleCreateOrganization($input) {
     if ($dc_ip) $dynamicValues['DC_IP'] = $dc_ip;
     if ($dns_primario) $dynamicValues['DNS_PRIMARIO'] = $dns_primario;
     if ($dns_secundario) $dynamicValues['DNS_SECUNDARIO'] = $dns_secundario;
-    if ($proxy_http) $dynamicValues['PROXY_HTTP'] = $proxy_http;
-    if ($proxy_porta) $dynamicValues['PROXY_PORTA'] = $proxy_porta;
 
     foreach ($dynamicValues as $varName => $varValue) {
         Database::execute("UPDATE organization_variables ov SET value = ? FROM variable_definitions vd WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = ?", [$varValue, $orgId, $varName]);
@@ -190,10 +188,27 @@ function handleUpdateOrganization($id, $input) {
 
 function handleDeleteOrganization($id) { if (!isAdminGap()) jsonError('Sem permissao', 403); Database::execute("UPDATE organizations SET is_active = FALSE WHERE id = ?", [$id]); jsonSuccess(null, 'Organizacao excluida'); }
 
+// FIX: handleGetVariables now properly uses $orgId parameter
 function handleGetVariables($orgId) {
-    if (!$orgId) $orgId = getUserOrgId();
-    $vars = Database::fetchAll("SELECT vd.id, vd.name, vd.description, vd.category, vd.type, vd.options, vd.is_required, vd.default_value, ov.value as current_value FROM variable_definitions vd LEFT JOIN organization_variables ov ON ov.variable_id = vd.id AND ov.organization_id = ? ORDER BY vd.category, vd.name", [$orgId]);
-    jsonSuccess(['variables' => $vars]);
+    // If no orgId passed, use the current user's organization
+    if (!$orgId) {
+        $orgId = getUserOrgId();
+    }
+
+    // Still no orgId? Return error
+    if (!$orgId) {
+        jsonError('Organization ID required', 400);
+    }
+
+    $vars = Database::fetchAll(
+        "SELECT vd.id, vd.name, vd.description, vd.category, vd.type, vd.options, vd.is_required, vd.default_value, ov.value as current_value
+         FROM variable_definitions vd
+         LEFT JOIN organization_variables ov ON ov.variable_id = vd.id AND ov.organization_id = ?
+         ORDER BY vd.category, vd.name",
+        [$orgId]
+    );
+
+    jsonSuccess(['variables' => $vars, 'organization_id' => $orgId]);
 }
 
 function handleUpdateVariables($input) {

@@ -73,9 +73,7 @@ async function loadDashboard() {
     const stationsEl = document.getElementById('recent-stations');
     if (stationsEl && stats.recent_stations?.length) {
         stationsEl.innerHTML = `<table class="w-full text-sm"><thead class="bg-slate-900"><tr><th class="px-4 py-2 text-left text-slate-400">Hostname</th><th class="px-4 py-2 text-left text-slate-400">IP</th><th class="px-4 py-2 text-left text-slate-400">Check-in</th><th class="px-4 py-2 text-left text-slate-400">OM</th><th class="px-4 py-2 text-left text-slate-400">Status</th></tr></thead><tbody>${stats.recent_stations.map(s => `<tr class="border-b border-slate-700"><td class="px-4 py-2 text-white">${Utils.escapeHtml(s.hostname || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.ip_address || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.formatDate(s.last_checkin)}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.org_acronym || '-')}</td><td class="px-4 py-2"><span class="px-2 py-0.5 text-xs rounded ${s.status === 'Atualizado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${s.status}</span></td></tr>`).join('')}</tbody></table>`;
-    } else if (stationsEl) {
-        stationsEl.innerHTML = '<p class="text-slate-400 text-center py-4">Nenhuma estacao registrada</p>';
-    }
+    } else if (stationsEl) stationsEl.innerHTML = '<p class="text-slate-400 text-center py-4">Nenhuma estacao registrada</p>';
 }
 
 async function loadOrganizations() {
@@ -114,7 +112,7 @@ window.selectOrganization = selectOrganization;
 
 async function loadVariables(orgId) {
     const res = await API.get('variables', {id: orgId});
-    if (!res.success) { Toast.error('Erro ao carregar'); return; }
+    if (!res.success) { Toast.error('Erro ao carregar variaveis: ' + (res.error || 'Unknown')); return; }
     allVariables = res.data.variables || [];
     activeCategory = 'Todas';
     renderVariables(allVariables);
@@ -171,15 +169,6 @@ function renderTypedInput(v) {
         let optionsHtml = predefinedOptions.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('');
         const hasCustomVal = val && !predefinedOptions.includes(val);
         return `<select data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${optionsHtml}${hasCustomVal ? `<option value="${Utils.escapeHtml(val)}" selected>${Utils.escapeHtml(val)}</option>` : ''}<option value="">Outro...</option></select>`;
-    }
-
-    if (v.options && typeof v.options === 'string') {
-        try {
-            const opts = JSON.parse(v.options);
-            if (Array.isArray(opts)) {
-                return `<select data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${opts.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
-            }
-        } catch(e) {}
     }
 
     if (v.type === 'password') return `<input type="password" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="******">`;

@@ -28,7 +28,6 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(
 input:checked + .toggle-slider { background-color: #10b981; }
 input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-/* Logo styling */
 .logo-img { max-height: 40px; width: auto; }
 .logo-img-large { max-height: 60px; width: auto; }
 .logo-img-login { max-height: 80px; width: auto; }
