@@ -217,7 +217,7 @@ async function loadOrganizations() {
     const list = document.getElementById('om-list');
     list.innerHTML = organizations.map(o => `
         <button class="om-nav-item" data-org-id="${o.id}" onclick="selectOrganization(${o.id})">
-            <div class="om-avatar">${o.logo_url ? `<img src="${esc(o.logo_url)}" alt="" onerror="this.parentElement.textContent='${esc(o.acronym.substring(0,3))}'">` : esc(o.acronym.substring(0, 3))}</div>
+            <div class="org-logo">${o.logo_url ? `<img src="${esc(o.logo_url)}" alt="" class="org-logo-img" onerror="this.parentElement.textContent='${esc(o.acronym.substring(0,3))}'">` : esc(o.acronym.substring(0, 3))}</div>
             <div style="min-width:0"><div style="font-size:.8125rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.acronym)}</div><div class="text-xs text-muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.name)}</div></div>
         </button>
     `).join('') || '<p class="text-xs text-muted p-3 text-center">Nenhuma OM</p>';
@@ -239,9 +239,9 @@ async function selectOrganization(orgId) {
 
     showView('om-detail');
 
-    // Header
+    // Header - using org-logo classes for consistent sizing
     const badge = document.getElementById('om-badge');
-    badge.innerHTML = org.logo_url ? `<img src="${esc(org.logo_url)}" alt="" onerror="this.parentElement.textContent='${esc(org.acronym.substring(0,3))}'">` : esc(org.acronym.substring(0, 3));
+    badge.innerHTML = org.logo_url ? `<img src="${esc(org.logo_url)}" alt="" class="org-logo-img" onerror="this.parentElement.textContent='${esc(org.acronym.substring(0,3))}'">` : esc(org.acronym.substring(0, 3));
     document.getElementById('om-name').textContent = org.name;
     document.getElementById('om-acronym').textContent = org.acronym;
     document.getElementById('om-domain').textContent = org.domain || 'Sem dominio';
