@@ -13,6 +13,19 @@ const Toast = { show: (msg, type = 'success') => { const div = document.createEl
 const categoryLabels = {'dominio':'Dominio','rede':'Rede','proxy':'Proxy','inventario':'Inventario','navegador':'Navegador','seguranca':'Seguranca','branding':'Identidade','general':'Geral','custom':'Custom','arquivos':'Arquivos','acesso_remoto':'Acesso Remoto','impressoras':'Impressoras','certificados':'Certificados','repositorios':'Repositorios'};
 const categoryOrder = ['dominio','rede','proxy','repositorios','navegador','branding','arquivos','impressoras','inventario','acesso_remoto','certificados','seguranca','general','custom'];
 
+// Variable type configurations for select/dropdown fields
+const variableOptions = {
+    'PROXY_MODE': ['NONE', 'MANUAL', 'PAC'],
+    'REPOSITORY_MODE': ['PUBLIC', 'MIRROR', 'HYBRID', 'CUSTOM'],
+    'REMOTE_METHOD': ['ssh', 'xrdp', 'anydesk', 'rustdesk'],
+    'PROXY_PORTA': ['80', '8080', '3128', '8888'],
+    'OFFLINE_AUTH_ENABLED': 'boolean',
+    'INVENTORY_ENABLED': 'boolean',
+    'CERTIFICATE_AUTO_INSTALL': 'boolean',
+    'AUTO_UPDATE': 'boolean',
+    'DEBUG_MODE': 'boolean'
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const session = await API.get('session');
@@ -42,9 +55,29 @@ function showView(viewName) {
 window.showView = showView;
 
 async function loadDashboard() {
-    const [stats, orgs] = await Promise.all([API.get('dashboard'), API.get('organizations')]);
-    if (stats.success) { document.getElementById('dash-orgs').textContent = stats.data.organizations; document.getElementById('dash-scripts').textContent = stats.data.scripts; document.getElementById('dash-vars').textContent = stats.data.variables; }
-    if (orgs.success) { organizations = orgs.data; document.getElementById('recent-orgs').innerHTML = organizations.map(o => `<div class="flex items-center justify-between py-2 border-b border-slate-700"><div class="flex items-center gap-2"><span class="font-semibold text-blue-400">${Utils.escapeHtml(o.acronym)}</span><span class="text-slate-400 text-sm">${Utils.escapeHtml(o.name)}</span></div><button onclick="selectOrganization(${o.id})" class="text-blue-400 hover:text-blue-300 text-sm">Ver</button></div>`).join(''); }
+    const res = await API.get('dashboard');
+    if (!res.success) return;
+    const stats = res.data;
+    document.getElementById('dash-orgs').textContent = stats.organizations;
+    document.getElementById('dash-scripts').textContent = stats.scripts;
+    document.getElementById('dash-vars').textContent = stats.variables;
+    document.getElementById('dash-bundles').textContent = stats.bundles_this_month;
+    document.getElementById('dash-stations-online').textContent = stats.stations_online;
+    document.getElementById('dash-stations-outdated').textContent = stats.stations_outdated;
+
+    const orgsRes = await API.get('organizations');
+    if (orgsRes.success) {
+        organizations = orgsRes.data;
+        document.getElementById('recent-orgs').innerHTML = organizations.map(o => `<div class="flex items-center justify-between py-2 border-b border-slate-700"><div class="flex items-center gap-2"><span class="font-semibold text-blue-400">${Utils.escapeHtml(o.acronym)}</span><span class="text-slate-400 text-sm">${Utils.escapeHtml(o.name)}</span></div><button onclick="selectOrganization(${o.id})" class="text-blue-400 hover:text-blue-300 text-sm">Ver</button></div>`).join('');
+    }
+
+    // Render recent stations table
+    const stationsEl = document.getElementById('recent-stations');
+    if (stationsEl && stats.recent_stations?.length) {
+        stationsEl.innerHTML = `<table class="w-full text-sm"><thead class="bg-slate-900"><tr><th class="px-4 py-2 text-left text-slate-400">Hostname</th><th class="px-4 py-2 text-left text-slate-400">IP</th><th class="px-4 py-2 text-left text-slate-400">Check-in</th><th class="px-4 py-2 text-left text-slate-400">OM</th><th class="px-4 py-2 text-left text-slate-400">Status</th></tr></thead><tbody>${stats.recent_stations.map(s => `<tr class="border-b border-slate-700"><td class="px-4 py-2 text-white">${Utils.escapeHtml(s.hostname || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.ip_address || '-')}</td><td class="px-4 py-2 text-slate-300">${Utils.formatDate(s.last_checkin)}</td><td class="px-4 py-2 text-slate-300">${Utils.escapeHtml(s.org_acronym || '-')}</td><td class="px-4 py-2"><span class="px-2 py-0.5 text-xs rounded ${s.status === 'Atualizado' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${s.status}</span></td></tr>`).join('')}</tbody></table>`;
+    } else if (stationsEl) {
+        stationsEl.innerHTML = '<p class="text-slate-400 text-center py-4">Nenhuma estacao registrada</p>';
+    }
 }
 
 async function loadOrganizations() {
@@ -53,7 +86,7 @@ async function loadOrganizations() {
     if (!res.success) return;
     organizations = res.data;
     if (!organizations.length) { el.innerHTML = '<div class="text-center py-4 text-slate-500 text-sm">Nenhuma OM</div>'; return; }
-    el.innerHTML = organizations.map(o => `<button class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors text-left" data-org-id="${o.id}" onclick="selectOrganization(${o.id})"><div class="org-logo">${o.logo_url?`<img src="${Utils.escapeHtml(o.logo_url)}" class="w-full h-full object-cover rounded" onerror="this.style.display='none'">`:o.acronym.substring(0,3)}</div><div><span class="block font-medium truncate">${Utils.escapeHtml(o.acronym)}</span><span class="block text-xs text-slate-500 truncate">${Utils.escapeHtml(o.name)}</span></div></button>`).join('');
+    el.innerHTML = organizations.map(o => `<button class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition-colors text-left" data-org-id="${o.id}" onclick="selectOrganization(${o.id})"><div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${o.logo_url?`<img src="${Utils.escapeHtml(o.logo_url)}" class="w-full h-full object-cover rounded" onerror="this.parentElement.textContent='${o.acronym.substring(0,3)}'">`:o.acronym.substring(0,3)}</div><div><span class="block font-medium truncate">${Utils.escapeHtml(o.acronym)}</span><span class="block text-xs text-slate-500 truncate">${Utils.escapeHtml(o.name)}</span></div></button>`).join('');
     const sel = document.getElementById('user-organization');
     if (sel) sel.innerHTML = '<option value="">Nenhuma</option>' + organizations.map(o => `<option value="${o.id}">${Utils.escapeHtml(o.acronym)}</option>`).join('');
     if (currentUser.role === 'operador_om' && organizations.length === 1) selectOrganization(organizations[0].id);
@@ -117,18 +150,50 @@ function renderVariables(vars) {
 }
 
 function renderVarRow(v) {
-    const input = (() => {
-        const val = v.current_value || '', ph = v.default_value || '';
-        if (v.type === 'boolean') return `<select data-var-id="${v.id}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm"><option value="true" ${val==='true'?'selected':''}>Verdadeiro</option><option value="false" ${val!=='true'?'selected':''}>Falso</option></select>`;
-        if (v.type === 'password') return `<input type="password" data-var-id="${v.id}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">`;
-        if (v.type === 'json') return `<textarea data-var-id="${v.id}" rows="3" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm font-mono">${Utils.escapeHtml(val)}</textarea>`;
-        return `<input type="text" data-var-id="${v.id}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="${Utils.escapeHtml(ph)}">`;
-    })();
+    const input = renderTypedInput(v);
     const isImg = v.name === 'WALLPAPER_URL' || v.name === 'LOGO_URL';
     const type = v.name === 'WALLPAPER_URL' ? 'wallpaper' : 'logo';
     const imgs = uploadedImages[type + 's'] || [];
-    const gallery = isImg ? `<div class="mt-2"><label class="upload-btn cursor-pointer"><input type="file" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp" onchange="uploadImage('${type}',${v.id},this)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Upload</label></div><div class="image-gallery mt-2" id="${type}-gallery">${imgs.map(i => `<div class="gallery-item ${i.url===(v.current_value||'')?'selected':''}" onclick="selectImage('${type}',${v.id},'${Utils.escapeHtml(i.url)}',this)"><img src="${i.url}" alt="${i.filename}"></div>`).join('') || '<span class="text-slate-500 text-xs">Nenhuma imagem</span>'}</div>` : '';
+    const gallery = isImg ? `<div class="mt-2"><label class="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs cursor-pointer hover:bg-blue-700"><input type="file" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" onchange="uploadImage('${type}',${v.id},this)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Upload</label></div><div class="image-gallery mt-2" id="${type}-gallery">${imgs.map(i => `<div class="gallery-item ${i.url===(v.current_value||'')?'selected':''}" onclick="selectImage('${type}',${v.id},'${Utils.escapeHtml(i.url)}',this)"><img src="${i.thumbnail || i.url}" alt="${i.filename}"></div>`).join('') || '<span class="text-slate-500 text-xs">Nenhuma imagem</span>'}</div>` : '';
     return `<div class="var-row"><label class="block text-sm font-medium text-slate-300 mb-1">${Utils.escapeHtml(v.name)}${v.is_required?'<span class="text-red-400">*</span>':''}</label>${input}${v.description?`<p class="text-slate-500 text-xs mt-1">${Utils.escapeHtml(v.description)}</p>`:''}${gallery}</div>`;
+}
+
+function renderTypedInput(v) {
+    const val = v.current_value || '';
+    const ph = v.default_value || '';
+    const varId = v.id;
+
+    // Check for predefined options
+    const predefinedOptions = variableOptions[v.name];
+    if (predefinedOptions === 'boolean' || v.type === 'boolean') {
+        const checked = val === 'true' || val === '1' || val === true;
+        return `<label class="inline-flex items-center cursor-pointer"><input type="checkbox" data-var-id="${varId}" ${checked ? 'checked' : ''} class="sr-only peer" onchange="this.nextElementSibling.nextElementSibling.checked = this.checked"><div class="relative w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div><span class="ml-2 text-sm text-slate-300">${checked ? 'Ativo' : 'Inativo'}</span></label>`;
+    }
+
+    if (Array.isArray(predefinedOptions)) {
+        let optionsHtml = predefinedOptions.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('');
+        const hasCustomVal = val && !predefinedOptions.includes(val);
+        return `<select data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${optionsHtml}${hasCustomVal ? `<option value="${Utils.escapeHtml(val)}" selected>${Utils.escapeHtml(val)}</option>` : ''}<option value="">Outro...</option></select>`;
+    }
+
+    // Check DB-level options
+    if (v.options && typeof v.options === 'string') {
+        try {
+            const opts = JSON.parse(v.options);
+            if (Array.isArray(opts)) {
+                return `<select data-var-id="${varId}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${opts.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}</select>`;
+            }
+        } catch(e) {}
+    }
+
+    // Type-based rendering
+    if (v.type === 'password') return `<input type="password" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="******">`;
+    if (v.type === 'json') return `<textarea data-var-id="${varId}" rows="3" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm font-mono">${Utils.escapeHtml(val)}</textarea>`;
+    if (v.type === 'array') return `<textarea data-var-id="${varId}" rows="2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm">${Utils.escapeHtml(val)}</textarea>`;
+    if (v.type === 'url' || v.name.includes('URL')) return `<input type="url" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="${Utils.escapeHtml(ph)}">`;
+    if (v.type === 'ip' || v.name.includes('IP') || v.name.includes('DNS')) return `<input type="text" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm font-mono" placeholder="${Utils.escapeHtml(ph)}">`;
+
+    return `<input type="text" data-var-id="${varId}" value="${Utils.escapeHtml(val)}" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm" placeholder="${Utils.escapeHtml(ph)}">`;
 }
 
 function selectImage(type, varId, url, el) {
@@ -143,8 +208,8 @@ window.selectImage = selectImage;
 async function uploadImage(type, varId, input) {
     const file = input.files[0];
     if (!file || !currentOrgId) return;
-    if (!['image/jpeg','image/png','image/gif','image/webp'].includes(file.type)) { Toast.error('Tipo invalido'); return; }
-    if (file.size > 5*1024*1024) { Toast.error('Max 5MB'); return; }
+    if (!['image/jpeg','image/png','image/gif','image/webp','image/svg+xml'].includes(file.type)) { Toast.error('Tipo invalido'); return; }
+    if (file.size > 10*1024*1024) { Toast.error('Max 10MB'); return; }
     const fd = new FormData();
     fd.append(type, file);
     fd.append('organization_id', currentOrgId);
@@ -159,7 +224,7 @@ async function uploadImage(type, varId, input) {
                 gallery.querySelectorAll('.gallery-item').forEach(i => i.classList.remove('selected'));
                 const item = document.createElement('div');
                 item.className = 'gallery-item selected';
-                item.innerHTML = `<img src="${data.data.url}" alt="${data.data.filename}">`;
+                item.innerHTML = `<img src="${data.data.thumbnail || data.data.url}" alt="${data.data.filename}">`;
                 item.onclick = () => selectImage(type, varId, data.data.url, item);
                 gallery.insertBefore(item, gallery.firstChild);
             }
@@ -174,7 +239,15 @@ window.filterByCategory = filterByCategory;
 async function saveVariables() {
     if (!currentOrgId) return;
     const updates = {};
-    document.querySelectorAll('[data-var-id]').forEach(el => updates[el.dataset.varId] = el.value);
+    document.querySelectorAll('[data-var-id]').forEach(el => {
+        let value;
+        if (el.type === 'checkbox') {
+            value = el.checked ? 'true' : 'false';
+        } else {
+            value = el.value;
+        }
+        updates[el.dataset.varId] = value;
+    });
     const res = await API.post('variables-update', {organization_id: currentOrgId, variables: updates});
     if (res.success) { Toast.success('Salvo'); loadVariables(currentOrgId); } else Toast.error(res.error);
 }

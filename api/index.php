@@ -82,12 +82,68 @@ function handleSessionCheck() {
 }
 
 function handleDashboard() {
+    $userOrgId = getUserOrgId();
+    $isAdmin = isAdminGap();
+
+    // Base stats
     $stats = [
         'organizations' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM organizations WHERE is_active = true")['c'],
         'scripts' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM scripts WHERE is_active = true")['c'],
         'variables' => (int)Database::fetchOne("SELECT COUNT(*) as c FROM variable_definitions")['c'],
-        'bundles_this_month' => 0, 'stations_online' => 0, 'stations_outdated' => 0, 'recent_stations' => []
+        'bundles_this_month' => 0,
+        'stations_online' => 0,
+        'stations_outdated' => 0,
+        'recent_stations' => []
     ];
+
+    // Bundles this month
+    $bundlesCount = Database::fetchOne(
+        "SELECT COUNT(*) as c FROM deploy_bundles WHERE generated_at >= date_trunc('month', CURRENT_DATE)"
+    );
+    $stats['bundles_this_month'] = (int)($bundlesCount['c'] ?? 0);
+
+    // Stations online (last 2 hours)
+    $twoHoursAgo = date('Y-m-d H:i:s', strtotime('-2 hours'));
+    if ($userOrgId !== null) {
+        $stats['stations_online'] = (int)Database::fetchOne(
+            "SELECT COUNT(*) as c FROM stations WHERE organization_id = ? AND last_checkin >= ?",
+            [$userOrgId, $twoHoursAgo]
+        )['c'];
+        $stats['stations_outdated'] = (int)Database::fetchOne(
+            "SELECT COUNT(*) as c FROM stations s
+             JOIN organizations o ON o.id = s.organization_id
+             WHERE s.organization_id = ? AND s.configuration_serial < o.serial_config",
+            [$userOrgId]
+        )['c'];
+        $stats['recent_stations'] = Database::fetchAll(
+            "SELECT hostname, ip_address, last_checkin,
+                    CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status
+             FROM stations s
+             JOIN organizations o ON o.id = s.organization_id
+             WHERE s.organization_id = ?
+             ORDER BY last_checkin DESC LIMIT 10",
+            [$userOrgId]
+        );
+    } else {
+        $stats['stations_online'] = (int)Database::fetchOne(
+            "SELECT COUNT(*) as c FROM stations WHERE last_checkin >= ?",
+            [$twoHoursAgo]
+        )['c'];
+        $stats['stations_outdated'] = (int)Database::fetchOne(
+            "SELECT COUNT(*) as c FROM stations s
+             JOIN organizations o ON o.id = s.organization_id
+             WHERE s.configuration_serial < o.serial_config"
+        )['c'];
+        $stats['recent_stations'] = Database::fetchAll(
+            "SELECT hostname, ip_address, last_checkin, s.organization_id,
+                    CASE WHEN s.configuration_serial >= o.serial_config THEN 'Atualizado' ELSE 'Desatualizado' END as status,
+                    o.acronym as org_acronym
+             FROM stations s
+             JOIN organizations o ON o.id = s.organization_id
+             ORDER BY last_checkin DESC LIMIT 10"
+        );
+    }
+
     jsonSuccess($stats);
 }
 
@@ -132,7 +188,11 @@ function handleCreateOrganization($input) {
 
     $ouPadrao = $domain ? 'OU=Estacoes,' . implode(',', array_map(fn($p) => "DC=$p", explode('.', $domain))) : '';
     $dynamicValues = [
-        'DOMINIO' => $domain, 'DOMINIO_NETBIOS' => $acronym, 'OM_ACRONYM' => $acronym, 'OM_NAME' => $name,
+        'DOMINIO' => $domain,
+        'DOMINIO_NETBIOS' => $acronym,
+        'OM_ACRONYM' => $acronym,
+        'OM_NAME' => $name,
+        'DISPLAY_NAME' => $name,  // Fix: Use organization name, not inherited value
         'BASE_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
         'WALLPAPER_URL' => $domain ? "https://softwarelivre.{$domain}/wallpapers/default.jpg" : '',
         'LOGO_URL' => $domain ? "https://softwarelivre.{$domain}/logos/default.png" : '',
@@ -171,7 +231,7 @@ function handleDeleteOrganization($id) { if (!isAdminGap()) jsonError('Sem permi
 
 function handleGetVariables($orgId) {
     if (!$orgId) $orgId = getUserOrgId();
-    $vars = Database::fetchAll("SELECT vd.id, vd.name, vd.description, vd.category, vd.type, vd.is_required, vd.default_value, ov.value as current_value FROM variable_definitions vd LEFT JOIN organization_variables ov ON ov.variable_id = vd.id AND ov.organization_id = ? ORDER BY vd.category, vd.name", [$orgId]);
+    $vars = Database::fetchAll("SELECT vd.id, vd.name, vd.description, vd.category, vd.type, vd.options, vd.is_required, vd.default_value, ov.value as current_value FROM variable_definitions vd LEFT JOIN organization_variables ov ON ov.variable_id = vd.id AND ov.organization_id = ? ORDER BY vd.category, vd.name", [$orgId]);
     jsonSuccess(['variables' => $vars]);
 }
 
@@ -274,20 +334,22 @@ function handleGenerateBundle($input) {
     $userOrgId = getUserOrgId();
     if ($userOrgId !== null && $userOrgId !== $orgId) jsonError('Sem permissao', 403);
 
-    $org = Database::fetchOne("SELECT acronym, domain FROM organizations WHERE id = ?", [$orgId]);
+    $org = Database::fetchOne("SELECT acronym, domain, serial_config FROM organizations WHERE id = ?", [$orgId]);
     if (!$org) jsonError('Organizacao nao encontrada', 404);
 
     $vars = Database::fetchAll("SELECT vd.name, ov.value FROM organization_variables ov JOIN variable_definitions vd ON vd.id = ov.variable_id WHERE ov.organization_id = ?", [$orgId]);
     $scripts = Database::fetchAll("SELECT id, name, filename, content, is_core FROM scripts WHERE is_active = TRUE AND (is_core = TRUE OR organization_id = ?) ORDER BY is_core DESC, execution_order, name", [$orgId]);
 
-    $bundle = "#!/bin/bash\n# SeederLinux Lite Bundle\n# Organization: {$org['acronym']}\n# Generated: " . date('Y-m-d H:i:s') . "\n\n";
+    $bundle = "#!/bin/bash\n# SeederLinux Lite Bundle\n# Organization: {$org['acronym']}\n# Generated: " . date('Y-m-d H:i:s') . "\n# Serial: {$org['serial_config']}\n\n";
     $bundle .= "# === VARIABLES ===\n";
     foreach ($vars as $v) $bundle .= "export {$v['name']}='" . str_replace("'", "'\\''", $v['value'] ?? '') . "'\n";
     $bundle .= "\n# === SCRIPTS ===\n\n";
 
     $scriptIds = [];
     foreach ($scripts as $s) {
-        $bundle .= "# --- {$s['name']} ({$s['filename']}) ---\n{$s['content']}\n\n";
+        // FIX: Apply placeholder substitution
+        $scriptContent = substituir_placeholders($s['content'], $orgId);
+        $bundle .= "# --- {$s['name']} ({$s['filename']}) ---\n{$scriptContent}\n\n";
         $scriptIds[] = $s['id'];
     }
 
@@ -323,8 +385,11 @@ function handleUploadWallpaper() {
     if (!isset($_FILES['wallpaper']) || $_FILES['wallpaper']['error'] !== UPLOAD_ERR_OK) jsonError('Nenhum arquivo enviado', 400);
 
     $file = $_FILES['wallpaper'];
-    if (!in_array($file['type'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) jsonError('Tipo invalido', 400);
-    if ($file['size'] > 5 * 1024 * 1024) jsonError('Arquivo muito grande (max 5MB)', 400);
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!in_array($file['type'], $allowedTypes)) jsonError('Tipo invalido. Use JPG, PNG, GIF, WebP ou SVG', 400);
+
+    // FIX: Increased limit to 10MB
+    if ($file['size'] > 10 * 1024 * 1024) jsonError('Arquivo muito grande (max 10MB)', 400);
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = 'wallpaper_org' . $orgId . '_' . time() . '.' . $ext;
@@ -333,9 +398,17 @@ function handleUploadWallpaper() {
 
     if (!move_uploaded_file($file['tmp_name'], $uploadDir . $filename)) jsonError('Erro ao salvar', 500);
 
+    // Generate thumbnail for gallery
+    $thumbDir = $uploadDir . 'thumbs/';
+    if (!is_dir($thumbDir)) mkdir($thumbDir, 0755, true);
+    $thumbPath = $thumbDir . $filename;
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+        generateThumbnail($uploadDir . $filename, $thumbPath, 100, 70);
+    }
+
     $wallpaperUrl = '/assets/wallpapers/' . $filename;
     Database::execute("UPDATE organization_variables ov SET value = ? FROM variable_definitions vd WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = 'WALLPAPER_URL'", [$wallpaperUrl, $orgId]);
-    jsonSuccess(['url' => $wallpaperUrl, 'filename' => $filename], 'Wallpaper enviado');
+    jsonSuccess(['url' => $wallpaperUrl, 'filename' => $filename, 'thumbnail' => '/assets/wallpapers/thumbs/' . $filename], 'Wallpaper enviado');
 }
 
 function handleUploadLogo() {
@@ -348,8 +421,11 @@ function handleUploadLogo() {
     if (!isset($_FILES['logo']) || $_FILES['logo']['error'] !== UPLOAD_ERR_OK) jsonError('Nenhum arquivo enviado', 400);
 
     $file = $_FILES['logo'];
-    if (!in_array($file['type'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'])) jsonError('Tipo invalido', 400);
-    if ($file['size'] > 2 * 1024 * 1024) jsonError('Arquivo muito grande (max 2MB)', 400);
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!in_array($file['type'], $allowedTypes)) jsonError('Tipo invalido', 400);
+
+    // FIX: Increased limit to 10MB
+    if ($file['size'] > 10 * 1024 * 1024) jsonError('Arquivo muito grande (max 10MB)', 400);
 
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $filename = 'logo_org' . $orgId . '_' . time() . '.' . $ext;
@@ -363,17 +439,57 @@ function handleUploadLogo() {
     jsonSuccess(['url' => $logoUrl, 'filename' => $filename], 'Logo enviado');
 }
 
+function generateThumbnail($srcPath, $dstPath, $width, $height) {
+    try {
+        $info = getimagesize($srcPath);
+        if (!$info) return false;
+
+        $type = $info[2];
+        $src = match($type) {
+            IMAGETYPE_JPEG => imagecreatefromjpeg($srcPath),
+            IMAGETYPE_PNG => imagecreatefrompng($srcPath),
+            IMAGETYPE_GIF => imagecreatefromgif($srcPath),
+            IMAGETYPE_WEBP => imagecreatefromwebp($srcPath),
+            default => false
+        };
+        if (!$src) return false;
+
+        $thumb = imagecreatetruecolor($width, $height);
+        imagecopyresampled($thumb, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
+
+        match($type) {
+            IMAGETYPE_JPEG => imagejpeg($thumb, $dstPath, 85),
+            IMAGETYPE_PNG => imagepng($thumb, $dstPath, 8),
+            IMAGETYPE_GIF => imagegif($thumb, $dstPath),
+            IMAGETYPE_WEBP => imagewebp($thumb, $dstPath, 85),
+            default => false
+        };
+
+        imagedestroy($src);
+        imagedestroy($thumb);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 function handleGetWallpapers() {
     $orgId = (int)($_GET['org_id'] ?? 0);
     if (!$orgId) jsonError('org_id required', 400);
 
     $uploadDir = __DIR__ . '/../assets/wallpapers/';
+    $thumbDir = $uploadDir . 'thumbs/';
     $images = [];
     if (is_dir($uploadDir)) {
         foreach (scandir($uploadDir) as $file) {
-            if ($file === '.' || $file === '..') continue;
+            if ($file === '.' || $file === '..' || is_dir($uploadDir . $file)) continue;
             if (preg_match('/^wallpaper_org' . $orgId . '_/', $file) || preg_match('/^default\./', $file)) {
-                $images[] = ['filename' => $file, 'url' => '/assets/wallpapers/' . $file, 'timestamp' => filemtime($uploadDir . $file)];
+                $images[] = [
+                    'filename' => $file,
+                    'url' => '/assets/wallpapers/' . $file,
+                    'thumbnail' => file_exists($thumbDir . $file) ? '/assets/wallpapers/thumbs/' . $file : '/assets/wallpapers/' . $file,
+                    'timestamp' => filemtime($uploadDir . $file)
+                ];
             }
         }
     }
@@ -389,7 +505,7 @@ function handleGetLogos() {
     $images = [];
     if (is_dir($uploadDir)) {
         foreach (scandir($uploadDir) as $file) {
-            if ($file === '.' || $file === '..') continue;
+            if ($file === '.' || $file === '..' || is_dir($uploadDir . $file)) continue;
             if (preg_match('/^logo_org' . $orgId . '_/', $file) || preg_match('/^default\./', $file)) {
                 $images[] = ['filename' => $file, 'url' => '/assets/logos/' . $file, 'timestamp' => filemtime($uploadDir . $file)];
             }

@@ -39,3 +39,24 @@ function getCurrentUser() {
 }
 
 function log_event($msg, $level = 'INFO') { error_log("[$level] $msg"); }
+
+/**
+ * Substitui placeholders {{VARIAVEL}} pelos valores reais das variáveis da organização
+ */
+function substituir_placeholders($content, $orgId) {
+    // Buscar todas as variáveis da organização
+    $vars = Database::fetchAll(
+        "SELECT vd.name, ov.value FROM organization_variables ov
+         JOIN variable_definitions vd ON vd.id = ov.variable_id
+         WHERE ov.organization_id = ?",
+        [$orgId]
+    );
+
+    foreach ($vars as $v) {
+        $placeholder = '{{' . $v['name'] . '}}';
+        $value = $v['value'] ?? '';
+        $content = str_replace($placeholder, $value, $content);
+    }
+
+    return $content;
+}
