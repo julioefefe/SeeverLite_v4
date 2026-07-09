@@ -6,8 +6,7 @@
     <title>Painel Admin - SeederLinux Lite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-200 font-sans">
     <div class="flex h-screen overflow-hidden">
@@ -26,7 +25,7 @@
             </div>
             <div class="flex-1 overflow-y-auto p-3">
                 <div class="mb-4">
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Navegação</span>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Navegacao</span>
                     <nav class="space-y-1 mt-2">
                         <button class="nav-main w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left active bg-slate-700 text-white" data-view="dashboard" onclick="showView('dashboard')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -34,7 +33,7 @@
                         </button>
                         <button id="nav-users" class="nav-main w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left hidden" data-view="users" onclick="showView('users')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            Usuários
+                            Usuarios
                         </button>
                         <button id="nav-scripts-core" class="nav-main w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-left hidden" data-view="scripts-core" onclick="showView('scripts-core')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
@@ -48,7 +47,7 @@
                 </div>
                 <div id="orgs-section">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Organizações</span>
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Organizacoes</span>
                         <button id="btn-new-org" class="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors hidden" title="Nova OM">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         </button>
@@ -62,7 +61,7 @@
                         <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm"><span id="user-initial">A</span></div>
                         <div>
                             <div class="text-sm font-medium text-white" id="user-name">Admin</div>
-                            <div class="text-xs text-slate-400" id="user-role">Administrador</div>
+                            <div class="text-xs text-slate-400" id="user-role">Admin GAP</div>
                         </div>
                     </div>
                     <button id="btn-logout" class="text-slate-400 hover:text-red-400 transition-colors" title="Sair">
@@ -78,26 +77,25 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="text-2xl font-bold text-white" id="page-title">Dashboard</h1>
-                        <p class="text-slate-400 text-sm" id="page-subtitle">Visão geral do sistema</p>
+                        <p class="text-slate-400 text-sm" id="page-subtitle">Visao geral do sistema</p>
                     </div>
                     <a href="/index.html" class="text-slate-400 hover:text-white text-sm flex items-center gap-2 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        Página Pública
+                        Pagina Publica
                     </a>
                 </div>
             </header>
 
             <div class="p-6" id="content-area">
-                <!-- ==================== DASHBOARD VIEW ==================== -->
+                <!-- Dashboard View -->
                 <div id="view-dashboard">
-                    <!-- Row 1: main stats -->
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
                         <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
                             <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3">
                                 <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                             </div>
                             <div class="text-2xl font-bold text-white" id="dash-orgs">-</div>
-                            <div class="text-slate-400 text-xs mt-1">Organizações</div>
+                            <div class="text-slate-400 text-xs mt-1">Organizacoes</div>
                         </div>
                         <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
                             <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-3">
@@ -111,21 +109,21 @@
                                 <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </div>
                             <div class="text-2xl font-bold text-white" id="dash-vars">-</div>
-                            <div class="text-slate-400 text-xs mt-1">Variáveis</div>
+                            <div class="text-slate-400 text-xs mt-1">Variaveis</div>
                         </div>
                         <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
                             <div class="w-10 h-10 bg-rose-500/20 rounded-lg flex items-center justify-center mb-3">
                                 <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                             </div>
                             <div class="text-2xl font-bold text-white" id="dash-bundles">-</div>
-                            <div class="text-slate-400 text-xs mt-1">Bundles/Mês</div>
+                            <div class="text-slate-400 text-xs mt-1">Bundles/Mes</div>
                         </div>
                         <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
                             <div class="w-10 h-10 bg-teal-500/20 rounded-lg flex items-center justify-center mb-3">
                                 <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </div>
                             <div class="text-2xl font-bold text-white" id="dash-stations-online">-</div>
-                            <div class="text-slate-400 text-xs mt-1">Estações Online</div>
+                            <div class="text-slate-400 text-xs mt-1">Estacoes Online</div>
                         </div>
                         <div class="bg-slate-800 rounded-xl p-5 border border-slate-700">
                             <div class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center mb-3">
@@ -135,31 +133,13 @@
                             <div class="text-slate-400 text-xs mt-1">Desatualizadas</div>
                         </div>
                     </div>
-
-                    <!-- Row 2: recent stations + orgs/scripts -->
-                    <div class="grid lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                                <h3 class="font-semibold text-white">Últimas Estações com Check-in</h3>
-                            </div>
-                            <div id="dash-stations-table">
-                                <div class="p-6 text-slate-400 text-center text-sm">Nenhuma estação registrou check-in ainda.</div>
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Organizações</h3></div>
-                                <div class="p-4" id="recent-orgs"></div>
-                            </div>
-                            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                                <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Scripts</h3></div>
-                                <div class="p-4" id="recent-scripts"></div>
-                            </div>
-                        </div>
+                    <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Organizacoes</h3></div>
+                        <div class="p-4" id="recent-orgs"></div>
                     </div>
                 </div>
 
-                <!-- ==================== OM DETAIL VIEW ==================== -->
+                <!-- OM Detail View -->
                 <div id="view-om-detail" class="hidden">
                     <div class="mb-6 flex items-center gap-4">
                         <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -168,7 +148,7 @@
                         <div class="flex-1">
                             <div class="flex items-center gap-3">
                                 <h2 class="text-2xl font-bold text-white" id="om-display-name">Nome da OM</h2>
-                                <button id="btn-edit-org" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Editar Organizacao">
+                                <button id="btn-edit-org" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Editar">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.232 3.232m-2.236-1.703l-2.163 2.163m1.06 1.06l-2.163 2.163m-1.06-1.06l-2.163 2.163m-1.06-1.06L7.5 15.5H5v-2.5l6.232-6.232m1.06 1.06l3.232-3.232"/></svg>
                                 </button>
                             </div>
@@ -188,18 +168,14 @@
                     <div id="tab-variables" class="tab-content">
                         <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                             <div class="px-6 py-4 border-b border-slate-700 flex flex-wrap items-center gap-3 justify-between">
-                                <h3 class="font-semibold text-white">Variáveis de Configuração</h3>
+                                <h3 class="font-semibold text-white">Variaveis de Configuracao</h3>
                                 <div class="flex items-center gap-3 flex-wrap">
-                                    <input type="text" id="var-search" placeholder="Buscar..." class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white w-36" oninput="filterVariables()">
-                                    <select id="var-category-filter" class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white" onchange="filterVariables()">
-                                        <option value="">Todas categorias</option>
-                                    </select>
-                                    <button id="btn-add-variable" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors">+ Variável</button>
+                                    <input type="text" id="var-search" placeholder="Buscar..." class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white w-36">
                                     <button id="btn-save-vars" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium text-white transition-colors">Salvar</button>
                                 </div>
                             </div>
                             <form id="vars-form" class="p-6">
-                                <div class="grid lg:grid-cols-2 gap-x-8 gap-y-4" id="vars-list"></div>
+                                <div id="vars-list"></div>
                             </form>
                         </div>
                     </div>
@@ -207,14 +183,10 @@
                     <!-- Tab: Scripts -->
                     <div id="tab-scripts" class="tab-content hidden">
                         <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                                <div class="flex gap-2">
-                                    <button class="script-tab px-3 py-1.5 bg-blue-600 rounded-lg text-sm font-medium text-white" data-script-type="core" onclick="switchScriptTab('core')">Core</button>
-                                    <button class="script-tab px-3 py-1.5 bg-slate-700 rounded-lg text-sm font-medium text-slate-300" data-script-type="custom" onclick="switchScriptTab('custom')">Custom</button>
-                                </div>
-                                <button id="btn-upload-script" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors hidden">+ Upload Script</button>
+                            <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Scripts da OM</h3></div>
+                            <div class="p-6" id="scripts-list">
+                                <div class="text-slate-400 text-center py-8">Scripts disponiveis para selecao no bundle.</div>
                             </div>
-                            <div class="p-6" id="scripts-list"></div>
                         </div>
                     </div>
 
@@ -223,43 +195,33 @@
                         <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                             <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Gerar e Baixar Bundle</h3></div>
                             <div class="p-6">
-                                <h4 class="text-white font-medium mb-4">Selecione os scripts para incluir:</h4>
-                                <div id="bundle-scripts-list" class="space-y-2 mb-6"></div>
-                                <div class="flex items-center gap-4 pt-4 border-t border-slate-700">
-                                    <button id="btn-generate-bundle" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 rounded-lg font-semibold text-white transition-all">Gerar Bundle</button>
-                                    <a id="download-link" href="#" class="hidden px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold text-white transition-all flex items-center gap-2">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                                        Baixar Bundle
-                                    </a>
-                                </div>
-                                <div id="bundle-warnings" class="mt-4 hidden">
-                                    <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-                                        <h4 class="text-amber-400 font-medium text-sm mb-2">Avisos:</h4>
-                                        <ul id="bundle-warnings-list" class="text-amber-300 text-sm space-y-1"></ul>
-                                    </div>
-                                </div>
+                                <button id="btn-generate-bundle" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 rounded-lg font-semibold text-white transition-all">Gerar Bundle</button>
+                                <a id="download-link" href="#" class="hidden ml-4 px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold text-white transition-all inline-flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Baixar Bundle
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ==================== USERS VIEW ==================== -->
+                <!-- Users View -->
                 <div id="view-users" class="hidden">
                     <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                            <h3 class="font-semibold text-white">Gerenciamento de Usuários</h3>
-                            <button id="btn-new-user" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors">+ Novo Usuário</button>
+                            <h3 class="font-semibold text-white">Gerenciamento de Usuarios</h3>
+                            <button id="btn-new-user" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors hidden">+ Novo Usuario</button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead class="bg-slate-900/50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Usuário</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Usuario</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Nome</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Role</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">OM</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
-                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase">Ações</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase">Acoes</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-tbody" class="divide-y divide-slate-700"></tbody>
@@ -268,18 +230,17 @@
                     </div>
                 </div>
 
-                <!-- ==================== SCRIPTS CORE VIEW ==================== -->
+                <!-- Scripts Core View -->
                 <div id="view-scripts-core" class="hidden">
                     <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
                             <h3 class="font-semibold text-white">Scripts Core</h3>
-                            <button id="btn-new-core-script" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors">+ Novo Script Core</button>
                         </div>
                         <div class="p-6" id="core-scripts-list"></div>
                     </div>
                 </div>
 
-                <!-- ==================== AUDIT VIEW ==================== -->
+                <!-- Audit View -->
                 <div id="view-audit" class="hidden">
                     <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-700"><h3 class="font-semibold text-white">Eventos de Auditoria</h3></div>
@@ -288,8 +249,8 @@
                                 <thead class="bg-slate-900/50">
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Data</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Usuário</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Ação</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Usuario</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Acao</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Entidade</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">OM</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Detalhes</th>
@@ -310,7 +271,7 @@
         <div class="relative flex items-center justify-center min-h-screen p-4">
             <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg relative">
                 <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-white text-lg">Nova Organização</h3>
+                    <h3 class="font-semibold text-white text-lg">Nova Organizacao</h3>
                     <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form id="new-org-form" class="p-6 space-y-4">
@@ -332,39 +293,35 @@
                             <textarea id="new-org-description" rows="2" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white resize-none"></textarea>
                         </div>
                     </div>
-
-                    <!-- Configuracoes de Rede (exibido apenas se dominio informado) -->
                     <div id="new-org-network-config" class="border-t border-slate-700 pt-4 mt-4 hidden">
                         <h4 class="text-sm font-semibold text-slate-300 mb-3">Configuracoes de Rede</h4>
-                        <p class="text-xs text-slate-500 mb-4">Preencha as informacoes de rede para o dominio informado.</p>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">DC Principal (IP) *</label>
-                                <input type="text" id="new-org-dc-ip" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.51">
+                                <input type="text" id="new-org-dc-ip" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="10.108.64.51">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">DNS Primario (IP) *</label>
-                                <input type="text" id="new-org-dns-primario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.51">
+                                <input type="text" id="new-org-dns-primario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="10.108.64.51">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">DNS Secundario</label>
-                                <input type="text" id="new-org-dns-secundario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.64.52">
+                                <input type="text" id="new-org-dns-secundario" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Homepage</label>
-                                <input type="text" id="new-org-homepage" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: www.comara.intraer">
+                                <input type="text" id="new-org-homepage" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="www.dominio">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Proxy HTTP</label>
-                                <input type="text" id="new-org-proxy-http" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 10.108.88.4">
+                                <input type="text" id="new-org-proxy-http" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Porta do Proxy</label>
-                                <input type="number" id="new-org-proxy-porta" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: 8080">
+                                <input type="number" id="new-org-proxy-porta" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="8080">
                             </div>
                         </div>
                     </div>
-
                     <div class="flex justify-end gap-3 pt-4">
                         <button type="button" class="modal-close px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium text-white">Cancelar</button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white">Criar OM</button>
@@ -386,7 +343,7 @@
                 <form id="edit-org-form" class="p-6 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Nome Completo</label>
-                        <input type="text" id="edit-org-name" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: Comando da Comara">
+                        <input type="text" id="edit-org-name" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Sigla</label>
@@ -395,7 +352,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Dominio AD</label>
-                        <input type="text" id="edit-org-domain" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Ex: comara.intraer">
+                        <input type="text" id="edit-org-domain" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Descricao</label>
@@ -416,7 +373,7 @@
         <div class="relative flex items-center justify-center min-h-screen p-4">
             <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg relative">
                 <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-white text-lg" id="user-modal-title">Novo Usuário</h3>
+                    <h3 class="font-semibold text-white text-lg">Novo Usuario</h3>
                     <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form id="user-form" class="p-6 space-y-4">
@@ -430,16 +387,8 @@
                         <input type="text" id="user-fullname" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                        <input type="email" id="user-email" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Senha <span id="user-password-optional" class="text-slate-500 text-xs"></span></label>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Senha</label>
                         <input type="password" id="user-password" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div id="user-confirm-password-group">
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Confirmar Senha</label>
-                        <input type="password" id="user-confirm-password" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -451,7 +400,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-2">Organização</label>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Organizacao</label>
                             <select id="user-organization" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
                                 <option value="">Nenhuma (admin)</option>
                             </select>
@@ -466,116 +415,9 @@
         </div>
     </div>
 
-    <!-- Modal: Upload Script -->
-    <div id="modal-upload-script" class="fixed inset-0 z-50 hidden">
-        <div class="modal-backdrop absolute inset-0 bg-black/60"></div>
-        <div class="relative flex items-center justify-center min-h-screen p-4">
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-2xl relative">
-                <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-white text-lg" id="script-modal-title">Upload Script</h3>
-                    <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-                </div>
-                <form id="script-form" class="p-6 space-y-4">
-                    <input type="hidden" id="script-edit-id" value="">
-                    <input type="hidden" id="script-is-core" value="false">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Nome do Script *</label>
-                        <input type="text" id="script-name" required class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Descrição</label>
-                        <input type="text" id="script-description" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Conteúdo (bash) *</label>
-                        <textarea id="script-content" rows="12" required class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono text-sm" placeholder="#!/bin/bash&#10;echo &quot;Hello {{DOMINIO}}&quot;"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-4">
-                        <button type="button" class="modal-close px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium text-white">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white">Salvar Script</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Add Variable -->
-    <div id="modal-add-variable" class="fixed inset-0 z-50 hidden">
-        <div class="modal-backdrop absolute inset-0 bg-black/60"></div>
-        <div class="relative flex items-center justify-center min-h-screen p-4">
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg relative">
-                <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-                    <h3 class="font-semibold text-white text-lg">Adicionar Variável</h3>
-                    <button class="modal-close text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-                </div>
-                <form id="add-variable-form" class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Nome da Variável *</label>
-                        <input type="text" id="var-name" required list="variable-catalog-list" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white uppercase" placeholder="Ex: DNS_PRIMARIO">
-                        <datalist id="variable-catalog-list"></datalist>
-                        <p class="text-slate-500 text-xs mt-1">Use o catálogo ou digite um nome personalizado</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-2">Tipo</label>
-                            <select id="var-type" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                                <option value="string">Texto (string)</option>
-                                <option value="integer">Numero (integer)</option>
-                                <option value="boolean">Booleano (sim/nao)</option>
-                                <option value="array">Lista (array)</option>
-                                <option value="json">JSON</option>
-                                <option value="url">URL</option>
-                                <option value="ip">Endereco IP</option>
-                                <option value="cidr">CIDR (rede)</option>
-                                <option value="password">Senha</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-300 mb-2">Categoria</label>
-                            <select id="var-category" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                                <option value="dominio">Dominio e Autenticacao</option>
-                                <option value="rede">Configuracao de Rede</option>
-                                <option value="arquivos">Arquivos e Diretorios</option>
-                                <option value="navegadores">Navegadores</option>
-                                <option value="branding">Identidade Visual</option>
-                                <option value="inventario">Inventario</option>
-                                <option value="acesso_remoto">Acesso Remoto</option>
-                                <option value="impressoras">Impressoras</option>
-                                <option value="certificados">Certificados</option>
-                                <option value="repositorios">Repositorios</option>
-                                <option value="general">Geral</option>
-                                <option value="custom">Personalizada</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Valor</label>
-                        <div id="var-value-input-wrapper">
-                            <input type="text" id="var-value" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white" placeholder="Digite o valor">
-                        </div>
-                        <div id="var-array-hint" class="hidden text-slate-500 text-xs mt-1">Para arrays, separe valores por virgula (ex: 10.0.0.1, 10.0.0.2)</div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Descricao</label>
-                        <input type="text" id="var-description" class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="var-required" class="w-4 h-4 rounded">
-                        <label for="var-required" class="text-sm text-slate-300 cursor-pointer">Variavel obrigatoria</label>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-4">
-                        <button type="button" class="modal-close px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium text-white">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white">Adicionar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
-    <script src="assets/js/app.js"></script>
     <script src="assets/js/admin.js"></script>
 </body>
 </html>
