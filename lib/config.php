@@ -3,7 +3,6 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-
 ini_set('upload_max_filesize', '10M');
 ini_set('post_max_size', '10M');
 
@@ -14,10 +13,7 @@ if (file_exists($envFile)) {
         if (strpos(trim($line), '#') === 0) continue;
         if (strpos($line, '=') !== false) {
             list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value, " \t\n\r\0\x0B\"'");
-            $_ENV[$key] = $value;
-            putenv("$key=$value");
+            $_ENV[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
         }
     }
 }

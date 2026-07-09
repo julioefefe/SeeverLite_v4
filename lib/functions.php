@@ -18,7 +18,7 @@ function sanitizeInput($str) {
 }
 
 function requireAuth() {
-    if (!isLoggedIn()) jsonError('Autenticacao necessaria', 401);
+    if (!isset($_SESSION['user_id'])) jsonError('Autenticacao necessaria', 401);
 }
 
 function isAdminGap() {
@@ -33,13 +33,6 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-function getCurrentUser() {
-    if (!isLoggedIn()) return null;
-    return ['id' => $_SESSION['user_id'], 'username' => $_SESSION['username'], 'role' => $_SESSION['role'], 'organization_id' => $_SESSION['organization_id'] ?? null];
-}
-
-function log_event($msg, $level = 'INFO') { error_log("[$level] $msg"); }
-
 function substituir_placeholders($content, $orgId) {
     $vars = Database::fetchAll(
         "SELECT vd.name, ov.value FROM organization_variables ov
@@ -47,12 +40,8 @@ function substituir_placeholders($content, $orgId) {
          WHERE ov.organization_id = ?",
         [$orgId]
     );
-
     foreach ($vars as $v) {
-        $placeholder = '{{' . $v['name'] . '}}';
-        $value = $v['value'] ?? '';
-        $content = str_replace($placeholder, $value, $content);
+        $content = str_replace('{{' . $v['name'] . '}}', $v['value'] ?? '', $content);
     }
-
     return $content;
 }
