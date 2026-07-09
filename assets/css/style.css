@@ -1,169 +1,27 @@
-/* SeederLinux Lite - Admin Panel Styles */
+:root { --primary: #3b82f6; --primary-dark: #2563eb; --secondary: #10b981; --bg-dark: #0f172a; --border: #334155; --text: #f1f5f9; --text-muted: #94a3b8; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text); }
 
-:root {
-    --primary: #3b82f6;
-    --primary-dark: #2563eb;
-    --secondary: #10b981;
-    --bg-dark: #0f172a;
-    --bg-card: #1e293b;
-    --border: #334155;
-    --text: #f1f5f9;
-    --text-muted: #94a3b8;
-}
+.category-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.category-tabs .cat-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 13px; white-space: nowrap; color: var(--text-muted); transition: all 0.2s; }
+.category-tabs .cat-tab:hover:not(.active) { background: rgba(255,255,255,0.05); }
+.category-tabs .cat-tab.active { background: var(--primary); color: white; font-weight: 500; }
 
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg-dark);
-    color: var(--text);
-}
+.image-gallery { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+.image-gallery .gallery-item { width: 100px; height: 70px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+.image-gallery .gallery-item:hover { border-color: var(--primary); transform: scale(1.05); }
+.image-gallery .gallery-item.selected { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); }
+.image-gallery .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Category Tabs */
-.category-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border);
-}
+.org-logo { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary)); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px; flex-shrink: 0; }
 
-.category-tabs .cat-tab {
-    padding: 8px 16px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 6px 6px 0 0;
-    font-size: 13px;
-    white-space: nowrap;
-    color: var(--text-muted);
-    transition: all 0.2s ease;
-}
+.var-row input[type="text"], .var-row input[type="password"], .var-row select, .var-row textarea { width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; }
+.var-row input:focus, .var-row select:focus, .var-row textarea:focus { outline: none; border-color: var(--primary); }
 
-.category-tabs .cat-tab:hover:not(.active) {
-    background: rgba(255,255,255,0.05);
-}
-
-.category-tabs .cat-tab.active {
-    background: var(--primary);
-    color: white;
-    font-weight: 500;
-}
-
-/* Image Gallery */
-.image-gallery {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 8px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
-}
-
-.image-gallery .gallery-item {
-    width: 100px;
-    height: 70px;
-    border-radius: 6px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.image-gallery .gallery-item:hover {
-    border-color: var(--primary);
-    transform: scale(1.05);
-}
-
-.image-gallery .gallery-item.selected {
-    border-color: var(--secondary);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
-}
-
-.image-gallery .gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Logo in org list */
-.org-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: white;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-/* Variable inputs */
-.var-row input[type="text"],
-.var-row input[type="password"],
-.var-row input[type="number"],
-.var-row select,
-.var-row textarea {
-    width: 100%;
-    padding: 8px 12px;
-    background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 14px;
-    transition: border-color 0.2s;
-}
-
-.var-row input:focus,
-.var-row select:focus,
-.var-row textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-/* Toast notifications */
-.toast {
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    animation: slideIn 0.3s ease;
-}
-
+.toast { padding: 12px 20px; border-radius: 8px; margin-bottom: 8px; animation: slideIn 0.3s ease; }
 .toast.success { background: #059669; }
 .toast.error { background: #dc2626; }
 .toast.warning { background: #d97706; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-/* Modal styles */
-.modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-}
-
-/* Upload button */
-.upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--primary);
-    color: white;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.upload-btn:hover {
-    background: var(--primary-dark);
-}
+.upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--primary); color: white; border-radius: 6px; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+.upload-btn:hover { background: var(--primary-dark); }

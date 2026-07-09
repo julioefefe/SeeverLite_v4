@@ -1,26 +1,14 @@
 <?php
-/**
- * SeederLinux Lite - Database Handler
- */
-
 class Database {
     private static $pdo = null;
 
     private static function connect() {
         if (self::$pdo !== null) return self::$pdo;
-
-        $dsn = sprintf(
-            'pgsql:host=%s;port=%s;dbname=%s',
-            DB_HOST,
-            DB_PORT,
-            DB_NAME
-        );
-
+        $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s', DB_HOST, DB_PORT, DB_NAME);
         self::$pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
-
         return self::$pdo;
     }
 
@@ -45,15 +33,7 @@ class Database {
         return self::connect()->lastInsertId();
     }
 
-    public static function beginTransaction() {
-        return self::connect()->beginTransaction();
-    }
-
-    public static function commit() {
-        return self::connect()->commit();
-    }
-
-    public static function rollback() {
-        return self::connect()->rollback();
-    }
+    public static function beginTransaction() { return self::connect()->beginTransaction(); }
+    public static function commit() { return self::connect()->commit(); }
+    public static function rollback() { return self::connect()->rollback(); }
 }
