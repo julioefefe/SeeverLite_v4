@@ -480,12 +480,33 @@ function handleCreateOrganization(array $input): void {
 
         $orgId = (int) Database::lastInsertId();
 
-        // Copy all default variables for this organization in a single query
+        // Copy all default variables for this organization
         Database::execute(
             "INSERT INTO organization_variables (organization_id, variable_id, value)
              SELECT ?, id, COALESCE(default_value, '') FROM variable_definitions",
             [$orgId]
         );
+
+        // Override specific variables with dynamic values based on the new organization
+        $dynamicValues = [
+            'DOMINIO' => $domain,
+            'DOMINIO_NETBIOS' => $acronym,
+            'OM_ACRONYM' => $acronym,
+            'OM_NAME' => $name,
+            'BASE_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
+            'WALLPAPER_URL' => $domain ? "https://softwarelivre.{$domain}/wallpapers/default.jpg" : '',
+            'LOGO_URL' => $domain ? "https://softwarelivre.{$domain}/logos/default.png" : '',
+        ];
+
+        foreach ($dynamicValues as $varName => $varValue) {
+            Database::execute(
+                "UPDATE organization_variables ov
+                 SET value = ?
+                 FROM variable_definitions vd
+                 WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = ?",
+                [$varValue, $orgId, $varName]
+            );
+        }
 
         Database::commit();
 

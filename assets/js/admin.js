@@ -58,7 +58,6 @@ function applyRolePermissions() {
     document.getElementById('nav-scripts-core').classList.toggle('hidden', !isAdmin);
     document.getElementById('nav-audit').classList.toggle('hidden', !isAdmin && !isAuditor);
     document.getElementById('btn-new-org').classList.toggle('hidden', !isAdmin);
-    document.getElementById('btn-delete-org').classList.toggle('hidden', !isAdmin);
     document.getElementById('btn-upload-script').classList.toggle('hidden', false);
     document.getElementById('btn-new-core-script').classList.toggle('hidden', !isAdmin);
     document.getElementById('btn-new-user').classList.toggle('hidden', !isAdmin);
@@ -264,17 +263,20 @@ async function selectOrganization(orgId) {
 
     document.getElementById('om-acronym-badge').textContent = org.acronym.substring(0, 3);
     document.getElementById('om-display-name').textContent = org.name;
-    document.getElementById('om-display-domain').textContent = org.domain || 'Sem domínio configurado';
+    document.getElementById('om-display-domain').textContent = org.domain || 'Sem dominio configurado';
 
-    document.getElementById('edit-om-name').value = org.name;
-    document.getElementById('edit-om-acronym').value = org.acronym;
-    document.getElementById('edit-om-domain').value = org.domain || '';
-    document.getElementById('edit-om-description').value = org.description || '';
+    // Populate edit modal fields
+    document.getElementById('edit-org-name').value = org.name;
+    document.getElementById('edit-org-acronym').value = org.acronym;
+    document.getElementById('edit-org-domain').value = org.domain || '';
+    document.getElementById('edit-org-description').value = org.description || '';
+
+    // Switch to variables tab
+    switchTab('variables');
 
     await loadVariables(orgId);
     await loadScriptsForBundle(orgId);
     await loadOrgScripts(orgId);
-    loadSettingsFromVariables();
 }
 window.selectOrganization = selectOrganization;
 
@@ -850,93 +852,58 @@ async function createOrganization() {
 
 async function updateOrganization() {
     if (!currentOrgId) return;
-    const name = document.getElementById('edit-om-name').value.trim();
-    const domain = document.getElementById('edit-om-domain').value.trim();
-    const description = document.getElementById('edit-om-description').value.trim();
+    const name = document.getElementById('edit-org-name').value.trim();
+    const domain = document.getElementById('edit-org-domain').value.trim();
+    const description = document.getElementById('edit-org-description').value.trim();
 
-    if (!name) { Toast.error('Nome é obrigatório'); return; }
-
-    // Collect settings tab variable values
-    const settingsVars = {};
-    document.querySelectorAll('#tab-settings input[data-var], #tab-settings select[data-var], #tab-settings textarea[data-var]').forEach(el => {
-        settingsVars[el.dataset.var] = el.value;
-    });
+    if (!name) { Toast.error('Nome e obrigatorio'); return; }
 
     try {
-        // 1. Update basic org info
         const data = await API.put('organization', currentOrgId, { name, domain, description });
         if (!data.success) { Toast.error(data.error || 'Erro ao atualizar'); return; }
 
-        // 2. Update settings variables (branding, proxy, repos)
-        const varUpdates = {};
-        allVariables.forEach(v => {
-            if (settingsVars[v.name] !== undefined) {
-                varUpdates[v.id] = settingsVars[v.name];
-            }
-        });
-        // For variables in settings that don't exist yet in allVariables, create them
-        const existingVarNames = new Set(allVariables.map(v => v.name));
-        const newVars = [];
-        for (const [name, value] of Object.entries(settingsVars)) {
-            if (!existingVarNames.has(name)) {
-                newVars.push({ name, value });
-            }
-        }
-
-        if (Object.keys(varUpdates).length > 0) {
-            const varResponse = await API.post('variables-update', { organization_id: currentOrgId, variables: varUpdates });
-            if (!varResponse.success) {
-                console.error('variables-update error:', varResponse);
-                Toast.warning('Org atualizada, mas houve avisos ao salvar variaveis');
-            }
-        }
-
-        // Create new variables that don't exist yet
-        for (const nv of newVars) {
-            if (nv.value) {
-                try {
-                    await API.post('variables', { organization_id: currentOrgId, name: nv.name, value: nv.value });
-                } catch (e) { console.error('Failed to create variable', nv.name, e); }
-            }
-        }
-
-        Toast.success('Configurações salvas com sucesso');
+        Toast.success('Organizacao atualizada com sucesso');
+        closeModal('modal-edit-org');
         await loadDashboard();
         await loadOrganizations();
-        await loadVariables(currentOrgId);
-    } catch (error) { Toast.error('Erro ao atualizar organização'); }
+        // Update display
+        document.getElementById('om-display-name').textContent = name;
+        document.getElementById('om-display-domain').textContent = domain || 'Sem dominio configurado';
+    } catch (error) { Toast.error('Erro ao atualizar organizacao'); }
 }
 
-// Load settings tab field values from the loaded variables
-function loadSettingsFromVariables() {
-    if (!allVariables.length) return;
-    const varMap = {};
-    allVariables.forEach(v => { varMap[v.name] = v.current_value || v.default_value || ''; });
+// Handle edit org button
+document.getElementById('btn-edit-org')?.addEventListener('click', () => {
+    if (!currentOrgId) return;
+    openModal('modal-edit-org');
+});
 
-    document.querySelectorAll('#tab-settings input[data-var], #tab-settings select[data-var], #tab-settings textarea[data-var]').forEach(el => {
-        const varName = el.dataset.var;
-        if (varMap[varName] !== undefined) {
-            el.value = varMap[varName];
-        }
-    });
+// Form submit for edit org
+document.getElementById('edit-org-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    updateOrganization();
+});
 
-    // Update wallpaper preview if exists
-    updateWallpaperPreview();
+function deleteOrganization() {
+    if (!currentOrgId) return;
+    if (!confirm('Tem certeza que deseja excluir esta organizacao? Esta acao nao pode ser desfeita.')) return;
+
+    (async () => {
+        try {
+            const response = await API.delete('organization', currentOrgId);
+            if (response.success) {
+                Toast.success('Organizacao excluida');
+                currentOrgId = null;
+                document.getElementById('view-om-detail').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                await loadDashboard();
+                await loadOrganizations();
+            } else {
+                Toast.error(response.error || 'Erro ao excluir');
+            }
+        } catch (error) { Toast.error('Erro ao excluir organizacao'); }
+    })();
 }
-
-function updateWallpaperPreview() {
-    const wallpaperUrl = document.getElementById('cfg-wallpaper-url')?.value;
-    const preview = document.getElementById('wallpaper-preview');
-    if (preview && wallpaperUrl) {
-        // If it's a local path, prefix with empty string, otherwise use as-is
-        const imgSrc = wallpaperUrl.startsWith('/') ? wallpaperUrl : wallpaperUrl;
-        preview.innerHTML = `<img src="${imgSrc}" alt="Wallpaper" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<svg class=\\'w-8 h-8 text-slate-600\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'2\\' d=\\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\\'/></svg>'">`;
-    }
-}
-
-async function handleWallpaperUpload(e) {
-    const file = e.target.files[0];
-    if (!file || !currentOrgId) return;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -1048,16 +1015,6 @@ function setupEventListeners() {
     // Add variable
     document.getElementById('btn-add-variable').addEventListener('click', () => openModal('modal-add-variable'));
     document.getElementById('add-variable-form').addEventListener('submit', addVariable);
-
-    // OM settings
-    document.getElementById('om-settings-form').addEventListener('submit', (e) => { e.preventDefault(); updateOrganization(); });
-    document.getElementById('btn-delete-org').addEventListener('click', deleteOrganization);
-
-    // Wallpaper upload
-    const wallpaperInput = document.getElementById('cfg-wallpaper-upload');
-    if (wallpaperInput) {
-        wallpaperInput.addEventListener('change', handleWallpaperUpload);
-    }
 
     // Logout
     document.getElementById('btn-logout').addEventListener('click', async () => {
