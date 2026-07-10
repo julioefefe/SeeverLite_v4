@@ -29,7 +29,10 @@ class Database {
         return $stmt->execute($params);
     }
 
-    public static function lastInsertId() { return self::connect()->lastInsertId(); }
+    public static function lastInsertId() {
+        return self::connect()->lastInsertId();
+    }
+
     public static function beginTransaction() { return self::connect()->beginTransaction(); }
     public static function commit() { return self::connect()->commit(); }
     public static function rollback() { return self::connect()->rollback(); }

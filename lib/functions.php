@@ -1,74 +1,94 @@
 <?php
-function jsonSuccess($data, $message = '') { jsonResponse(['success' => true, 'data' => $data, 'message' => $message], 200); }
-function jsonError($message, $code = 400) { jsonResponse(['success' => false, 'error' => $message], $code); }
-function jsonResponse($data, $code = 200) { http_response_code($code); echo json_encode($data); exit; }
-function sanitizeInput($str) { return htmlspecialchars(trim($str ?? ''), ENT_QUOTES, 'UTF-8'); }
-function requireAuth() {
-    if (!function_exists('getallheaders')) {
-        function getallheaders() {
-            $headers = [];
-            foreach ($_SERVER as $name => $value) {
-                if (substr($name, 0, 5) == 'HTTP_') {
-                    $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
-                }
-            }
-            return $headers;
-        }
-    }
-
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
-
-    if (preg_match('/Bearer\s+(.+)/', $authHeader, $matches)) {
-        $token = $matches[1];
-        $tokens = Database::fetchAll(
-            "SELECT ut.user_id, ut.token_hash, u.role, u.organization_id
-             FROM user_tokens ut
-             JOIN users u ON u.id = ut.user_id
-             WHERE ut.expires_at > NOW()"
-        );
-        foreach ($tokens as $t) {
-            if (password_verify($token, $t['token_hash'])) {
-                $_SESSION['user_id'] = $t['user_id'];
-                $_SESSION['role'] = $t['role'];
-                $_SESSION['organization_id'] = $t['organization_id'];
-                return;
-            }
-        }
-    }
-
-    if (!empty($_SESSION['user_id'])) {
-        return;
-    }
-
-    jsonError('Autenticacao necessaria', 401);
+function jsonSuccess($data, $message = '') {
+    jsonResponse(['success' => true, 'data' => $data, 'message' => $message], 200);
 }
-function isAdminGap() { return isset($_SESSION['role']) && $_SESSION['role'] === 'admin_gap'; }
-function isAuditor() { return isset($_SESSION['role']) && $_SESSION['role'] === 'auditor'; }
-function getUserOrgId() { return $_SESSION['organization_id'] ?? null; }
+
+function jsonError($message, $code = 400) {
+    jsonResponse(['success' => false, 'error' => $message], $code);
+}
+
+function jsonResponse($data, $code = 200) {
+    http_response_code($code);
+    echo json_encode($data);
+    exit;
+}
+
+function sanitizeInput($str) {
+    return htmlspecialchars(trim($str ?? ''), ENT_QUOTES, 'UTF-8');
+}
+
+function requireAuth() {
+    if (!isset($_SESSION['user_id'])) jsonError('Autenticacao necessaria', 401);
+}
+
+function isAdminGap() {
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin_gap';
+}
+
+function isAuditor() {
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'auditor';
+}
+
+function getUserOrgId() {
+    return $_SESSION['organization_id'] ?? null;
+}
+
+function isLoggedIn() {
+    return isset($_SESSION['user_id']);
+}
+
+function getCurrentUser() {
+    if (!isLoggedIn()) return null;
+    return [
+        'id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'role' => $_SESSION['role'],
+        'organization_id' => $_SESSION['organization_id'] ?? null
+    ];
+}
+
+function log_event($msg, $level = 'INFO') {
+    error_log("[$level] " . date('Y-m-d H:i:s') . " - $msg");
+}
 
 function log_audit($action, $entity, $entityId = null, $details = null) {
-    try {
-        Database::execute(
-            "INSERT INTO audit_events (user_id, organization_id, action, entity, entity_id, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-            [$_SESSION['user_id'] ?? null, $_SESSION['organization_id'] ?? null, $action, $entity, $entityId, $details ? json_encode($details) : null, $_SERVER['REMOTE_ADDR'] ?? null]
-        );
-    } catch (Exception $e) { }
+    $userId = $_SESSION['user_id'] ?? null;
+    $orgId = $_SESSION['organization_id'] ?? null;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+
+    Database::execute(
+        "INSERT INTO audit_events (user_id, organization_id, action, entity, entity_id, details, ip_address, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+        [$userId, $orgId, $action, $entity, $entityId, $details ? json_encode($details) : null, $ip]
+    );
 }
 
+/**
+ * Substitui placeholders {{VARIAVEL}} pelos valores reais das variáveis da organização
+ */
 function substituir_placeholders($content, $orgId) {
     $vars = Database::fetchAll(
-        "SELECT vd.name, ov.value FROM organization_variables ov JOIN variable_definitions vd ON vd.id = ov.variable_id WHERE ov.organization_id = ?",
+        "SELECT vd.name, ov.value FROM organization_variables ov
+         JOIN variable_definitions vd ON vd.id = ov.variable_id
+         WHERE ov.organization_id = ?",
         [$orgId]
     );
+
     foreach ($vars as $v) {
-        $content = str_replace('{{' . $v['name'] . '}}', $v['value'] ?? '', $content);
+        $placeholder = '{{' . $v['name'] . '}}';
+        $value = $v['value'] ?? '';
+        $content = str_replace($placeholder, $value, $content);
     }
+
     return $content;
 }
 
-function generateDefaultVariables($orgId, $name, $acronym, $domain, $dcIp = null, $dnsPrimario = null, $dnsSecundario = null) {
-    $vals = [
+/**
+ * Gera valores dinâmicos para uma nova organização
+ */
+function generateDefaultVariables($orgId, $name, $acronym, $domain, $dcIp = null, $dnsPrimario = null, $dnsSecundario = null, $proxyHttp = null, $proxyPorta = null) {
+    // Valores padrão usando caminhos LOCAIS
+    $defaultValues = [
         'DOMINIO' => $domain,
         'DOMINIO_NETBIOS' => strtoupper($acronym),
         'OM_ACRONYM' => strtoupper($acronym),
@@ -85,28 +105,58 @@ function generateDefaultVariables($orgId, $name, $acronym, $domain, $dcIp = null
         'OU_PADRAO' => $domain ? 'OU=Estacoes,' . implode(',', array_map(fn($p) => "DC=$p", explode('.', $domain))) : '',
         'REPOSITORY_URL' => $domain ? "https://softwarelivre.{$domain}" : '',
     ];
-    if ($dcIp) $vals['DC_IP'] = $dcIp;
-    if ($dnsPrimario) $vals['DNS_PRIMARIO'] = $dnsPrimario;
-    if ($dnsSecundario) $vals['DNS_SECUNDARIO'] = $dnsSecundario;
-    foreach ($vals as $varName => $varValue) {
+
+    if ($dcIp) $defaultValues['DC_IP'] = $dcIp;
+    if ($dnsPrimario) $defaultValues['DNS_PRIMARIO'] = $dnsPrimario;
+    if ($dnsSecundario) $defaultValues['DNS_SECUNDARIO'] = $dnsSecundario;
+    if ($proxyHttp) $defaultValues['PROXY_HTTP'] = $proxyHttp;
+    if ($proxyPorta) $defaultValues['PROXY_PORTA'] = $proxyPorta;
+
+    // Atualiza as variáveis da organização
+    foreach ($defaultValues as $varName => $varValue) {
         Database::execute(
-            "UPDATE organization_variables ov SET value = ? FROM variable_definitions vd WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = ?",
+            "UPDATE organization_variables ov SET value = ?
+             FROM variable_definitions vd
+             WHERE ov.organization_id = ? AND ov.variable_id = vd.id AND vd.name = ?",
             [$varValue, $orgId, $varName]
         );
     }
 }
 
+/**
+ * Gera thumbnail de imagem
+ */
 function generateThumbnail($srcPath, $dstPath, $width = 100, $height = 70) {
     try {
         $info = getimagesize($srcPath);
         if (!$info) return false;
+
         $type = $info[2];
-        $src = match($type) { IMAGETYPE_JPEG => imagecreatefromjpeg($srcPath), IMAGETYPE_PNG => imagecreatefrompng($srcPath), IMAGETYPE_GIF => imagecreatefromgif($srcPath), IMAGETYPE_WEBP => imagecreatefromwebp($srcPath), default => false };
+        $src = match($type) {
+            IMAGETYPE_JPEG => imagecreatefromjpeg($srcPath),
+            IMAGETYPE_PNG => imagecreatefrompng($srcPath),
+            IMAGETYPE_GIF => imagecreatefromgif($srcPath),
+            IMAGETYPE_WEBP => imagecreatefromwebp($srcPath),
+            default => false
+        };
+
         if (!$src) return false;
+
         $thumb = imagecreatetruecolor($width, $height);
         imagecopyresampled($thumb, $src, 0, 0, 0, 0, $width, $height, imagesx($src), imagesy($src));
-        match($type) { IMAGETYPE_JPEG => imagejpeg($thumb, $dstPath, 85), IMAGETYPE_PNG => imagepng($thumb, $dstPath, 8), IMAGETYPE_GIF => imagegif($thumb, $dstPath), IMAGETYPE_WEBP => imagewebp($thumb, $dstPath, 85), default => false };
-        imagedestroy($src); imagedestroy($thumb);
+
+        match($type) {
+            IMAGETYPE_JPEG => imagejpeg($thumb, $dstPath, 85),
+            IMAGETYPE_PNG => imagepng($thumb, $dstPath, 8),
+            IMAGETYPE_GIF => imagegif($thumb, $dstPath),
+            IMAGETYPE_WEBP => imagewebp($thumb, $dstPath, 85),
+            default => false
+        };
+
+        imagedestroy($src);
+        imagedestroy($thumb);
         return true;
-    } catch (Exception $e) { return false; }
+    } catch (Exception $e) {
+        return false;
+    }
 }
