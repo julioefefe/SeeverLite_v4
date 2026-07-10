@@ -59,8 +59,21 @@ function handleLogin() {
     $_SESSION['role'] = $user['role'];
     $_SESSION['organization_id'] = $user['organization_id'];
 
+    $token = bin2hex(random_bytes(32));
+    $tokenHash = password_hash($token, PASSWORD_DEFAULT);
+    Database::execute(
+        "INSERT INTO user_tokens (user_id, token_hash, expires_at) VALUES (?, ?, NOW() + INTERVAL '24 hours')",
+        [$user['id'], $tokenHash]
+    );
+
     log_audit('login', 'user', $user['id']);
-    jsonSuccess(['id' => $user['id'], 'username' => $user['username'], 'role' => $user['role']]);
+    jsonSuccess([
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'role' => $user['role'],
+        'token' => $token,
+        'organization_id' => $user['organization_id'] ?? null
+    ]);
 }
 
 function handleLogout() {
@@ -75,19 +88,19 @@ function handleDashboard() {
         (SELECT COUNT(*) FROM organizations) as organizations,
         (SELECT COUNT(*) FROM scripts) as scripts,
         (SELECT COUNT(*) FROM variable_definitions) as variables,
-        (SELECT COUNT(*) FROM bundles WHERE created_at >= date_trunc('month', CURRENT_DATE)) as bundles_this_month,
-        (SELECT COUNT(*) FROM stations WHERE last_checkin > NOW() - INTERVAL '1 hour') as stations_online,
-        (SELECT COUNT(*) FROM stations WHERE config_status='outdated' OR last_checkin < NOW() - INTERVAL '24 hours') as stations_outdated");
+        (SELECT COUNT(*) FROM deploy_bundles WHERE generated_at >= date_trunc('month', CURRENT_DATE)) as bundles_this_month,
+        (SELECT COUNT(*) FROM stations WHERE last_checkin > NOW() - INTERVAL '2 hours') as stations_online,
+        (SELECT COUNT(*) FROM stations WHERE last_checkin < NOW() - INTERVAL '2 hours' OR last_checkin IS NULL) as stations_outdated");
 
-    $recentStations = Database::fetchAll("SELECT s.hostname, s.ip_address, s.last_checkin, o.acronym as org_acronym, CASE WHEN s.last_checkin > NOW() - INTERVAL '24 hours' THEN 'Atualizado' ELSE 'Desatualizado' END as status FROM stations s JOIN organizations o ON o.id=s.organization_id ORDER BY s.last_checkin DESC LIMIT 10");
-    $recentOrgs = Database::fetchAll("SELECT id, name, acronym FROM organizations ORDER BY created_at DESC LIMIT 5");
+    $recentStations = Database::fetchAll("SELECT s.hostname, s.ip_address, s.last_checkin, o.acronym as org_acronym, CASE WHEN s.last_checkin > NOW() - INTERVAL '2 hours' THEN 'online' ELSE 'offline' END as status FROM stations s JOIN organizations o ON o.id=s.organization_id ORDER BY s.last_checkin DESC LIMIT 10");
+    $recentOrgs = Database::fetchAll("SELECT id, name, acronym, domain FROM organizations ORDER BY created_at DESC LIMIT 5");
 
     jsonSuccess(array_merge($stats, ['recent_stations' => $recentStations, 'recent_orgs' => $recentOrgs]));
 }
 
 function handleGetOrganizations() {
     requireAuth();
-    $orgs = Database::fetchAll("SELECT id, name, acronym, domain, description, logo_url, created_at FROM organizations ORDER BY acronym");
+    $orgs = Database::fetchAll("SELECT id, name, acronym, domain, description, created_at FROM organizations ORDER BY acronym");
     jsonSuccess($orgs);
 }
 
@@ -368,7 +381,7 @@ function handleGenerateBundle() {
         }
     }
 
-    Database::execute("INSERT INTO bundles (organization_id, script_count, created_by) VALUES (?, ?, ?)", [$orgId, count($scriptIds), $_SESSION['user_id']]);
+    Database::execute("INSERT INTO deploy_bundles (organization_id, user_id, filename, content, scripts_count) VALUES (?, ?, ?, ?, ?)", [$orgId, $_SESSION['user_id'], "bundle_" . $org['acronym'] . "_" . date('Ymd_His') . ".sh", $bundleContent, count($scriptIds)]);
     log_audit('generate_bundle', 'bundle', null, ['org_id' => $orgId, 'scripts' => count($scriptIds)]);
 
     $filename = "bundle_" . $org['acronym'] . "_" . date('Ymd_His') . ".sh";

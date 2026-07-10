@@ -3,7 +3,46 @@ function jsonSuccess($data, $message = '') { jsonResponse(['success' => true, 'd
 function jsonError($message, $code = 400) { jsonResponse(['success' => false, 'error' => $message], $code); }
 function jsonResponse($data, $code = 200) { http_response_code($code); echo json_encode($data); exit; }
 function sanitizeInput($str) { return htmlspecialchars(trim($str ?? ''), ENT_QUOTES, 'UTF-8'); }
-function requireAuth() { if (!isset($_SESSION['user_id'])) jsonError('Autenticacao necessaria', 401); }
+function requireAuth() {
+    if (!function_exists('getallheaders')) {
+        function getallheaders() {
+            $headers = [];
+            foreach ($_SERVER as $name => $value) {
+                if (substr($name, 0, 5) == 'HTTP_') {
+                    $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+                }
+            }
+            return $headers;
+        }
+    }
+
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+
+    if (preg_match('/Bearer\s+(.+)/', $authHeader, $matches)) {
+        $token = $matches[1];
+        $tokens = Database::fetchAll(
+            "SELECT ut.user_id, ut.token_hash, u.role, u.organization_id
+             FROM user_tokens ut
+             JOIN users u ON u.id = ut.user_id
+             WHERE ut.expires_at > NOW()"
+        );
+        foreach ($tokens as $t) {
+            if (password_verify($token, $t['token_hash'])) {
+                $_SESSION['user_id'] = $t['user_id'];
+                $_SESSION['role'] = $t['role'];
+                $_SESSION['organization_id'] = $t['organization_id'];
+                return;
+            }
+        }
+    }
+
+    if (!empty($_SESSION['user_id'])) {
+        return;
+    }
+
+    jsonError('Autenticacao necessaria', 401);
+}
 function isAdminGap() { return isset($_SESSION['role']) && $_SESSION['role'] === 'admin_gap'; }
 function isAuditor() { return isset($_SESSION['role']) && $_SESSION['role'] === 'auditor'; }
 function getUserOrgId() { return $_SESSION['organization_id'] ?? null; }
